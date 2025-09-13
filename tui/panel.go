@@ -14,8 +14,8 @@ type PanelBase struct {
 type Panel interface {
 	GetBase() *PanelBase
 	SetPosition(x, y, w, h int)
-	Update(input byte) bool // returns true if redraw needed
-	Draw(active bool)       // handles drawing the panel (active indicates if this panel has focus)
+	Update(input byte) bool  // returns true if redraw needed
+	Draw(active bool) string // returns the panel content as a string with \n for lines
 }
 
 // Default implementations for PanelBase
@@ -23,31 +23,40 @@ func (pb *PanelBase) Update(input byte) bool {
 	return false // base implementation does nothing
 }
 
-func (pb *PanelBase) Draw(active bool) {
-	// Base implementation draws border and title
+func (pb *PanelBase) Draw(active bool) string {
+	// Base implementation returns border and title as string
 	if pb.W < 2 || pb.H < 2 {
-		return
+		return ""
 	}
 
 	color := ClrWhite
 	if active {
 		color = ClrCyan
 	}
-	WriteAt(pb.X, pb.Y, color+"┌"+strings.Repeat("─", pb.W-2)+"┐"+Reset)
+	var lines []string
+	// Top border
+	top := color + "┌" + strings.Repeat("─", pb.W-2) + "┐" + Reset
+	lines = append(lines, top)
 
+	// Title on top if present
 	if pb.Title != "" {
 		title := " [" + pb.Title + "] "
 		if len(title) <= pb.W-2 {
-			WriteAt(pb.X+1, pb.Y, title)
+			lines[0] = color + "┌" + title + strings.Repeat("─", pb.W-2-len(title)) + "┐" + Reset
 		}
 	}
 
+	// Middle lines (empty for now)
 	for i := 1; i < pb.H-1; i++ {
-		WriteAt(pb.X, pb.Y+i, color+"│"+Reset)
-		WriteAt(pb.X+pb.W-1, pb.Y+i, color+"│"+Reset)
+		line := color + "│" + strings.Repeat(" ", pb.W-2) + "│" + Reset
+		lines = append(lines, line)
 	}
 
-	WriteAt(pb.X, pb.Y+pb.H-1, color+"└"+strings.Repeat("─", pb.W-2)+"┘"+Reset)
+	// Bottom border
+	bottom := color + "└" + strings.Repeat("─", pb.W-2) + "┘" + Reset
+	lines = append(lines, bottom)
+
+	return strings.Join(lines, "\n")
 }
 
 // Layout types for tree-like structure

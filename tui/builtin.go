@@ -1,5 +1,7 @@
 package tui
 
+import "strings"
+
 type ListPanel struct {
 	PanelBase
 	Items    []string
@@ -49,16 +51,34 @@ func (lp *ListPanel) Update(input byte) bool {
 	return false
 }
 
-func (lp *ListPanel) Draw(active bool) {
-	// Draw base first
-	lp.PanelBase.Draw(active)
+func (lp *ListPanel) Draw(active bool) string {
+	baseStr := lp.PanelBase.Draw(active)
+	if baseStr == "" {
+		return ""
+	}
+	lines := strings.Split(baseStr, "\n")
+	if len(lines) < 3 {
+		return baseStr
+	}
 
-	// Draw list items
+	// Fill content lines
+	contentHeight := len(lines) - 2
 	for i, item := range lp.Items {
-		if i >= lp.H-2 { // leave space for borders
+		if i >= contentHeight {
+			if i == contentHeight {
+				// Last line: "..."
+				ellipsis := "..."
+				if len(ellipsis) > lp.W-2 {
+					ellipsis = ellipsis[:lp.W-2]
+				}
+				spaces := lp.W - 2 - len(ellipsis)
+				if spaces < 0 {
+					spaces = 0
+				}
+				lines[len(lines)-2] = ClrWhite + "│" + Reset + ClrWhite + ellipsis + strings.Repeat(" ", spaces) + Reset + ClrWhite + "│" + Reset
+			}
 			break
 		}
-		y := lp.Y + 1 + i
 		color := ClrWhite
 		if i == lp.Selected {
 			if active {
@@ -68,8 +88,15 @@ func (lp *ListPanel) Draw(active bool) {
 			}
 		}
 		truncated := truncateToWidth(item, lp.W-2)
-		WriteAt(lp.X+1, y, color+truncated+Reset)
+		spaces := lp.W - 2 - len(truncated)
+		if spaces < 0 {
+			spaces = 0
+		}
+		padded := truncated + strings.Repeat(" ", spaces)
+		lines[i+1] = ClrWhite + "│" + Reset + color + padded + Reset + ClrWhite + "│" + Reset
 	}
+
+	return strings.Join(lines, "\n")
 }
 
 // TextPanel implementations
@@ -114,25 +141,26 @@ func (tp *TextPanel) Update(input byte) bool {
 	return false
 }
 
-func (tp *TextPanel) Draw(active bool) {
-	// Draw base first
-	tp.PanelBase.Draw(active)
+func (tp *TextPanel) Draw(active bool) string {
+	baseStr := tp.PanelBase.Draw(active)
+	if baseStr == "" {
+		return ""
+	}
+	lines := strings.Split(baseStr, "\n")
+	if len(lines) < 3 {
+		return baseStr
+	}
 
-	// Draw text content
+	// Draw text content on first content line
 	textStr := string(tp.Text)
 	if len(textStr) > tp.W-2 {
-		textStr = textStr[:tp.W-2]
+		textStr = truncateToWidth(textStr, tp.W-2)
 	}
-	WriteAt(tp.X+1, tp.Y+1, ClrWhite+textStr+Reset)
+	padded := textStr + strings.Repeat(" ", tp.W-2-len(textStr))
+	lines[1] = ClrWhite + "│" + Reset + ClrWhite + padded + Reset + ClrWhite + "│" + Reset
 
-	// Draw cursor if active
-	if active {
-		cursorX := tp.X + 1 + tp.Cursor
-		if cursorX >= tp.X+tp.W-1 {
-			cursorX = tp.X + tp.W - 2
-		}
-		WriteAt(cursorX, tp.Y+1, "")
-	}
+	// Note: Cursor drawing is handled separately in app.draw() if needed
+	return strings.Join(lines, "\n")
 }
 
 // InfoPanel implementations
@@ -141,17 +169,41 @@ func (ip *InfoPanel) Update(input byte) bool {
 	return false
 }
 
-func (ip *InfoPanel) Draw(active bool) {
-	// Draw base first
-	ip.PanelBase.Draw(active)
+func (ip *InfoPanel) Draw(active bool) string {
+	baseStr := ip.PanelBase.Draw(active)
+	if baseStr == "" {
+		return ""
+	}
+	lines := strings.Split(baseStr, "\n")
+	if len(lines) < 3 {
+		return baseStr
+	}
 
-	// Draw info lines
+	contentHeight := len(lines) - 2
 	for i, line := range ip.Lines {
-		if i >= ip.H-2 { // leave space for borders
+		if i >= contentHeight {
+			if i == contentHeight {
+				// Last line: "..."
+				ellipsis := "..."
+				if len(ellipsis) > ip.W-2 {
+					ellipsis = ellipsis[:ip.W-2]
+				}
+				spaces := ip.W - 2 - len(ellipsis)
+				if spaces < 0 {
+					spaces = 0
+				}
+				lines[len(lines)-2] = ClrWhite + "│" + Reset + ClrWhite + ellipsis + strings.Repeat(" ", spaces) + Reset + ClrWhite + "│" + Reset
+			}
 			break
 		}
-		y := ip.Y + 1 + i
 		truncated := truncateToWidth(line, ip.W-2)
-		WriteAt(ip.X+1, y, ClrWhite+truncated+Reset)
+		spaces := ip.W - 2 - len(truncated)
+		if spaces < 0 {
+			spaces = 0
+		}
+		padded := truncated + strings.Repeat(" ", spaces)
+		lines[i+1] = ClrWhite + "│" + Reset + ClrWhite + padded + Reset + ClrWhite + "│" + Reset
 	}
+
+	return strings.Join(lines, "\n")
 }

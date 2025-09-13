@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -96,14 +97,29 @@ func (a *App) draw() {
 	clearScreen()
 	for i, p := range a.panels {
 		active := i == a.activeIdx
-		p.Draw(active)
+		content := p.Draw(active)
+		if content == "" {
+			continue
+		}
+		lines := strings.Split(content, "\n")
+		for j, line := range lines {
+			if j >= p.GetBase().H {
+				break
+			}
+			WriteAt(p.GetBase().X, p.GetBase().Y+j, line)
+		}
 	}
 	status := " Tab: switch  •  ↑/↓: navigate  •  ←/→: move cursor  •  Enter: confirm  •  q/Ctrl-C: quit "
 	WriteAt(0, a.term.rows-1, padRightRuneString(status, a.term.cols))
 
-	// Handle cursor visibility for text panels
-	if _, ok := a.panels[a.activeIdx].(*TextPanel); ok && a.activeIdx < len(a.panels) {
+	// Handle cursor visibility and position for text panels
+	if tp, ok := a.panels[a.activeIdx].(*TextPanel); ok && a.activeIdx < len(a.panels) {
 		fmt.Print(ShowCursor)
+		cursorX := tp.X + 1 + tp.Cursor
+		if cursorX >= tp.X+tp.W-1 {
+			cursorX = tp.X + tp.W - 2
+		}
+		WriteAt(cursorX, tp.Y+1, "")
 	} else {
 		fmt.Print(HideCursor)
 	}

@@ -3,6 +3,7 @@ package main
 import (
 	"app/tui"
 	"fmt"
+	"strings"
 )
 
 // CustomPanel demonstrates how to create custom panels
@@ -23,21 +24,49 @@ func (cp *CounterPanel) Update(input byte) bool {
 	return false
 }
 
-func (cp *CounterPanel) Draw(active bool) {
-	cp.PanelBase.Draw(active)
+func (cp *CounterPanel) Draw(active bool) string {
+	baseStr := cp.PanelBase.Draw(active)
+	if baseStr == "" {
+		return ""
+	}
+	lines := strings.Split(baseStr, "\n")
+	if len(lines) < 5 {
+		return baseStr
+	}
 
-	// Draw the counter value
+	// Draw the counter value on line 2
 	countStr := fmt.Sprintf("Count: %d", cp.Count)
-	tui.WriteAt(cp.X+2, cp.Y+2, tui.ClrWhite+countStr+tui.Reset)
+	if len(countStr) > cp.W-2 {
+		countStr = countStr[:cp.W-5] + "..."
+	}
+	spaces := cp.W - 2 - len(countStr)
+	if spaces < 0 {
+		spaces = 0
+	}
+	padded := countStr + strings.Repeat(" ", spaces)
+	lines[1] = tui.ClrWhite + "│" + tui.Reset + tui.ClrWhite + padded + tui.Reset + tui.ClrWhite + "│" + tui.Reset
 
-	// Draw instructions
+	// Draw instructions on lines 3 and 4
 	instructions := []string{
 		"Use + to increment",
 		"Use - to decrement",
 	}
 	for i, line := range instructions {
-		tui.WriteAt(cp.X+2, cp.Y+4+i, tui.ClrWhite+line+tui.Reset)
+		if i+2 >= len(lines)-1 {
+			break
+		}
+		if len(line) > cp.W-2 {
+			line = line[:cp.W-5] + "..."
+		}
+		spaces := cp.W - 2 - len(line)
+		if spaces < 0 {
+			spaces = 0
+		}
+		padded := line + strings.Repeat(" ", spaces)
+		lines[i+2] = tui.ClrWhite + "│" + tui.Reset + tui.ClrWhite + padded + tui.Reset + tui.ClrWhite + "│" + tui.Reset
 	}
+
+	return strings.Join(lines, "\n")
 }
 
 func (cp *CounterPanel) GetBase() *tui.PanelBase {
