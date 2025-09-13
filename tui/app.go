@@ -61,6 +61,7 @@ func (a *App) Run() {
 					a.term.cols = cols
 					a.term.rows = rows
 					a.layoutPanels(a.layout) // need to store layout
+					a.draw()                 // redraw after resize
 				}
 			} else {
 				a.running = false
