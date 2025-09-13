@@ -1,11 +1,19 @@
 package tui
 
 import (
+	"bufio"
 	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
 )
+
+type Terminal struct {
+	cols     int
+	rows     int
+	reader   *bufio.Reader
+	prevStty string
+}
 
 // Terminal helpers
 func enableRawMode() (prev string, err error) {
@@ -42,7 +50,7 @@ func getTermSize() (cols, rows int, err error) {
 	return 80, 24, fmt.Errorf("unexpected stty size output")
 }
 
-func writeAt(x, y int, s string) {
+func WriteAt(x, y int, s string) {
 	fmt.Printf("\x1b[%d;%dH%s", y+1, x+1, s)
 }
 
