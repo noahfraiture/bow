@@ -25,56 +25,14 @@ func (cp *CounterPanel) Update(input byte) bool {
 }
 
 func (cp *CounterPanel) Draw(active bool) string {
-	baseStr := cp.PanelBase.Draw(active)
-	if baseStr == "" {
-		return ""
-	}
-	lines := strings.Split(baseStr, "\n")
-	if len(lines) < 5 {
-		return baseStr
-	}
-
-	// Draw the counter value on line 2
 	countStr := fmt.Sprintf("Count: %d", cp.Count)
-	if len(countStr) > cp.W-2 {
-		countStr = countStr[:cp.W-5] + "..."
-	}
-	spaces := cp.W - 2 - len(countStr)
-	if spaces < 0 {
-		spaces = 0
-	}
-	padded := countStr + strings.Repeat(" ", spaces)
-	lines[1] = tui.ClrWhite + "│" + tui.Reset + tui.ClrWhite + padded + tui.Reset + tui.ClrWhite + "│" + tui.Reset
-
-	// Draw instructions on lines 3 and 4
 	instructions := []string{
 		"Use + to increment",
 		"Use - to decrement",
 	}
-	for i, line := range instructions {
-		if i+2 >= len(lines)-1 {
-			break
-		}
-		if len(line) > cp.W-2 {
-			line = line[:cp.W-5] + "..."
-		}
-		spaces := cp.W - 2 - len(line)
-		if spaces < 0 {
-			spaces = 0
-		}
-		padded := line + strings.Repeat(" ", spaces)
-		lines[i+2] = tui.ClrWhite + "│" + tui.Reset + tui.ClrWhite + padded + tui.Reset + tui.ClrWhite + "│" + tui.Reset
-	}
-
+	lines := []string{countStr}
+	lines = append(lines, instructions...)
 	return strings.Join(lines, "\n")
-}
-
-func (cp *CounterPanel) GetBase() *tui.PanelBase {
-	return &cp.PanelBase
-}
-
-func (cp *CounterPanel) SetPosition(x, y, w, h int) {
-	cp.X, cp.Y, cp.W, cp.H = x, y, w, h
 }
 
 func main() {
@@ -94,7 +52,7 @@ func main() {
 		Cursor:    0,
 	}
 	input2 := &tui.TextPanel{
-		PanelBase: tui.PanelBase{Title: "Input", Border: true},
+		PanelBase: tui.PanelBase{Title: "Input", Border: false},
 		Text:      []rune{},
 		Cursor:    0,
 	}

@@ -102,12 +102,16 @@ func (a *App) draw() {
 		if content == "" {
 			continue
 		}
-		lines := strings.Split(content, "\n")
+		full := p.GetBase().WrapWithBorder(content, active)
+		if full == "" {
+			continue
+		}
+		lines := strings.Split(full, "\n")
 		for j, line := range lines {
-			if j >= p.GetBase().H {
+			if j >= p.GetBase().h {
 				break
 			}
-			WriteAt(p.GetBase().X, p.GetBase().Y+j, line)
+			WriteAt(p.GetBase().x, p.GetBase().y+j, line)
 		}
 	}
 	status := " Tab: switch  •  ↑/↓: navigate  •  ←/→: move cursor  •  Enter: confirm  •  q/Ctrl-C: quit "
@@ -116,11 +120,25 @@ func (a *App) draw() {
 	// Handle cursor visibility and position for text panels
 	if tp, ok := a.panels[a.activeIdx].(*TextPanel); ok && a.activeIdx < len(a.panels) {
 		fmt.Print(ShowCursor)
-		cursorX := tp.X + 1 + tp.Cursor
-		if cursorX >= tp.X+tp.W-1 {
-			cursorX = tp.X + tp.W - 2
+		var startX, startY, maxX int
+		if tp.Border {
+			startX = tp.x + 1
+			startY = tp.y + 1
+			maxX = tp.x + tp.w - 2
+		} else {
+			startX = tp.x
+			if tp.Title != "" {
+				startY = tp.y + 1
+			} else {
+				startY = tp.y
+			}
+			maxX = tp.x + tp.w - 1
 		}
-		WriteAt(cursorX, tp.Y+1, "")
+		cursorX := startX + tp.Cursor
+		if cursorX > maxX {
+			cursorX = maxX
+		}
+		WriteAt(cursorX, startY, "")
 	} else {
 		fmt.Print(HideCursor)
 	}
@@ -161,9 +179,6 @@ func (a *App) handleByte(b byte) {
 	case KeyTab:
 		a.switchPanel()
 		return
-	case KeyEnter, '\n':
-		a.onEnter()
-		return
 	case 'q', 'Q', 3, 4: // quit keys (q, Q, Ctrl-C, Ctrl-D)
 		a.running = false
 		return
@@ -180,66 +195,4 @@ func (a *App) handleByte(b byte) {
 
 func (a *App) switchPanel() {
 	a.activeIdx = (a.activeIdx + 1) % len(a.panels)
-}
-
-// These methods are now handled by panel.Update()
-// Keeping them for backward compatibility or future use
-func (a *App) onUp()    { /* handled by panel.Update() */ }
-func (a *App) onDown()  { /* handled by panel.Update() */ }
-func (a *App) onLeft()  { /* handled by panel.Update() */ }
-func (a *App) onRight() { /* handled by panel.Update() */ }
-
-func (a *App) onEnter() {
-	switch p := a.panels[a.activeIdx].(type) {
-	case *ListPanel:
-		// echo to info if there's an info panel
-		for _, panel := range a.panels {
-			if ip, ok := panel.(*InfoPanel); ok {
-				ip.Lines = append(ip.Lines, "", "Selected: "+p.Items[p.Selected])
-			}
-		}
-	case *TextPanel:
-		for _, panel := range a.panels {
-			if ip, ok := panel.(*InfoPanel); ok {
-				ip.Lines = append(ip.Lines, "", "Input: "+string(p.Text))
-			}
-		}
-		// Clear text - this logic is now also in TextPanel.Update()
-		p.Text = []rune{}
-		p.Cursor = 0
-	}
-}
-
-// These methods are now handled by panel.Update()
-// Keeping them for backward compatibility
-func (a *App) onBackspace() { /* handled by panel.Update() */ }
-
-func (a *App) onRune(r rune) {
-	// Vim-style navigation for non-text panels
-	if _, ok := a.panels[a.activeIdx].(*TextPanel); !ok {
-		switch r {
-		case 'j':
-			if a.activeIdx < len(a.panels) {
-				a.panels[a.activeIdx].Update(66) // down arrow
-				a.draw()
-			}
-		case 'k':
-			if a.activeIdx < len(a.panels) {
-				a.panels[a.activeIdx].Update(65) // up arrow
-				a.draw()
-			}
-		case 'h':
-			if a.activeIdx < len(a.panels) {
-				a.panels[a.activeIdx].Update(68) // left arrow
-				a.draw()
-			}
-		case 'l':
-			if a.activeIdx < len(a.panels) {
-				a.panels[a.activeIdx].Update(67) // right arrow
-				a.draw()
-			}
-		case 'q', 'Q':
-			a.running = false
-		}
-	}
 }
