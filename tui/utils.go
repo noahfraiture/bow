@@ -6,7 +6,6 @@ import (
 	"unicode/utf8"
 )
 
-// Utilities
 func truncateToWidth(s string, w int) string {
 	if displayWidth(s) <= w {
 		return s

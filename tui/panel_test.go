@@ -12,7 +12,7 @@ func TestPanelBaseDraw(t *testing.T) {
 
 	// Test with active = true (cyan border)
 	result := pb.Draw(true)
-	full := pb.WrapWithBorder(result, true)
+	full := pb.wrapWithBorder(result, true)
 	lines := strings.Split(full, "\n")
 	if len(lines) != 5 {
 		t.Errorf("Expected 5 lines, got %d", len(lines))
@@ -40,7 +40,7 @@ func TestPanelBaseDraw(t *testing.T) {
 
 	// Test with active = false (white border)
 	result = pb.Draw(false)
-	full = pb.WrapWithBorder(result, false)
+	full = pb.wrapWithBorder(result, false)
 	lines = strings.Split(full, "\n")
 	expectedTop = ClrWhite + "┌ [Test] ┐" + Reset
 	if lines[0] != expectedTop {
@@ -50,7 +50,7 @@ func TestPanelBaseDraw(t *testing.T) {
 	// Test without title
 	pb.Title = ""
 	result = pb.Draw(true)
-	full = pb.WrapWithBorder(result, true)
+	full = pb.wrapWithBorder(result, true)
 	lines = strings.Split(full, "\n")
 	expectedTop = ClrCyan + "┌────────┐" + Reset
 	if lines[0] != expectedTop {
@@ -74,7 +74,7 @@ func TestPanelBaseDraw(t *testing.T) {
 	// Test without title
 	pb.Title = ""
 	result = pb.Draw(true)
-	full = pb.WrapWithBorder(result, true)
+	full = pb.wrapWithBorder(result, true)
 	lines = strings.Split(full, "\n")
 	expectedTop = ClrCyan + "┌────────┐" + Reset
 	if lines[0] != expectedTop {
@@ -98,7 +98,7 @@ func TestListPanelDraw(t *testing.T) {
 	}
 
 	res := lp.Draw(true)
-	full := lp.WrapWithBorder(res, true)
+	full := lp.wrapWithBorder(res, true)
 	lines := strings.Split(full, "\n")
 	if len(lines) != 5 {
 		t.Errorf("Expected 5 lines, got %d", len(lines))
@@ -121,7 +121,7 @@ func TestListPanelDraw(t *testing.T) {
 	// Test truncation
 	lp.Items = []string{"very long item name"}
 	res = lp.Draw(true)
-	full = lp.WrapWithBorder(res, true)
+	full = lp.wrapWithBorder(res, true)
 	lines = strings.Split(full, "\n")
 	if !strings.Contains(lines[1], "very l..") {
 		t.Errorf("Truncation failed: %q", lines[1])
@@ -131,7 +131,7 @@ func TestListPanelDraw(t *testing.T) {
 	lp.Items = []string{"1", "2", "3", "4", "5"}
 	lp.h = 4
 	res = lp.Draw(true)
-	full = lp.WrapWithBorder(res, true)
+	full = lp.wrapWithBorder(res, true)
 	lines = strings.Split(full, "\n")
 	if len(lines) != 4 {
 		t.Errorf("Expected 4 lines, got %d", len(lines))
@@ -150,7 +150,7 @@ func TestTextPanelDraw(t *testing.T) {
 	}
 
 	res := tp.Draw(true)
-	full := tp.WrapWithBorder(res, true)
+	full := tp.wrapWithBorder(res, true)
 	lines := strings.Split(full, "\n")
 	if len(lines) != 4 {
 		t.Errorf("Expected 4 lines, got %d", len(lines))
@@ -165,7 +165,7 @@ func TestTextPanelDraw(t *testing.T) {
 	// Test truncation
 	tp.Text = []rune("very long text")
 	res = tp.Draw(true)
-	full = tp.WrapWithBorder(res, true)
+	full = tp.wrapWithBorder(res, true)
 	lines = strings.Split(full, "\n")
 	if !strings.Contains(lines[1], "very l..") {
 		t.Errorf("Text truncation failed: %q", lines[1])
@@ -179,7 +179,7 @@ func TestInfoPanelDraw(t *testing.T) {
 	}
 
 	res := ip.Draw(true)
-	full := ip.WrapWithBorder(res, true)
+	full := ip.wrapWithBorder(res, true)
 	lines := strings.Split(full, "\n")
 	if len(lines) != 5 {
 		t.Errorf("Expected 5 lines, got %d", len(lines))
@@ -194,7 +194,7 @@ func TestInfoPanelDraw(t *testing.T) {
 	// Test overflow
 	ip.Lines = []string{"1", "2", "3", "4", "5"}
 	res = ip.Draw(true)
-	full = ip.WrapWithBorder(res, true)
+	full = ip.wrapWithBorder(res, true)
 	lines = strings.Split(full, "\n")
 	if !strings.Contains(lines[3], "...") {
 		t.Errorf("Overflow not handled: %q", lines[3])

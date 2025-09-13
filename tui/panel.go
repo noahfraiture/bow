@@ -5,6 +5,9 @@ import (
 	"unicode/utf8"
 )
 
+// PanelBase provides common fields and methods for panels.
+// It should be embedded (using an unnamed field) in custom panel structs to enable
+// positioning, borders, and default behavior. Users can override Update and Draw methods.
 type PanelBase struct {
 	x, y   int
 	w, h   int
@@ -12,24 +15,32 @@ type PanelBase struct {
 	Border bool
 }
 
-// Default implementations for PanelBase
+// GetBase returns the PanelBase instance.
+// This is used internally by the layout system; users typically don't need to call it directly.
 func (pb *PanelBase) GetBase() *PanelBase {
 	return pb
 }
 
+// Panel defines the interface for UI panels that can update and draw themselves.
+// Implementations should embed PanelBase (or another existing panel) to inherit
+// common functionality like positioning and borders. Override Update and Draw as needed, but keep GetBase for internal use.
 type Panel interface {
 	GetBase() *PanelBase
-	Update(input byte) bool  // returns true if redraw needed
-	Draw(active bool) string // returns the panel content as a string with \n for lines
+	Update(input byte) bool
+	Draw(active bool) string
 }
 
-// Default implementations for PanelBase
+// Update handles input for the base panel.
+// Default implementation does nothing and returns false.
+// Override in custom panels to handle user input.
 func (pb *PanelBase) Update(input byte) bool {
-	return false // base implementation does nothing
+	return false
 }
 
+// Draw renders the base panel's content.
+// Default implementation returns empty lines fitting the panel's dimensions.
+// Override in custom panels to provide custom content.
 func (pb *PanelBase) Draw(active bool) string {
-	// Base implementation returns empty content lines
 	if pb.w <= 2 || pb.h <= 2 {
 		return ""
 	}
@@ -40,7 +51,7 @@ func (pb *PanelBase) Draw(active bool) string {
 	return strings.Join(lines, "\n")
 }
 
-func (pb *PanelBase) WrapWithBorder(content string, active bool) string {
+func (pb *PanelBase) wrapWithBorder(content string, active bool) string {
 	if pb.w < 2 || pb.h < 2 {
 		return ""
 	}
@@ -86,7 +97,6 @@ func (pb *PanelBase) WrapWithBorder(content string, active bool) string {
 	}
 
 	var lines []string
-	// Top border with title
 	top := color + "┌" + strings.Repeat("─", pb.w-2) + "┐" + Reset
 	if pb.Title != "" {
 		title := " [" + pb.Title + "] "
@@ -96,7 +106,6 @@ func (pb *PanelBase) WrapWithBorder(content string, active bool) string {
 	}
 	lines = append(lines, top)
 
-	// Content lines
 	for _, line := range contentLines {
 		truncated := truncateToWidth(line, pb.w-2)
 		padded := truncated + strings.Repeat(" ", pb.w-2-displayWidth(truncated))
@@ -104,59 +113,61 @@ func (pb *PanelBase) WrapWithBorder(content string, active bool) string {
 		lines = append(lines, borderedLine)
 	}
 
-	// Pad with empty lines if less than max
 	for len(lines) < pb.h-1 {
 		emptyLine := color + "│" + Reset + ClrWhite + strings.Repeat(" ", pb.w-2) + Reset + color + "│" + Reset
 		lines = append(lines, emptyLine)
 	}
 
-	// Bottom border
 	bottom := color + "└" + strings.Repeat("─", pb.w-2) + "┘" + Reset
 	lines = append(lines, bottom)
 
 	return strings.Join(lines, "\n")
 }
 
-// Layout types for tree-like structure
-type Layout interface {
-	Position(x, y, w, h int) []Panel
+type layout interface {
+	position(x, y, w, h int) []Panel
 }
 
+// PanelNode represents a single panel in the layout.
+// It positions the panel to fill the entire given area.
 type PanelNode struct {
 	Panel Panel
 }
 
+// HorizontalSplit divides the area into left and right sections.
+// Left takes half the width, right takes the rest.
 type HorizontalSplit struct {
-	Left  Layout
-	Right Layout
+	Left  layout
+	Right layout
 }
 
+// VerticalSplit divides the area into top and bottom sections.
+// Top takes half the height, bottom takes the rest.
 type VerticalSplit struct {
-	Top    Layout
-	Bottom Layout
+	Top    layout
+	Bottom layout
 }
 
-// Position methods
-func (pn *PanelNode) Position(x, y, w, h int) []Panel {
+func (pn *PanelNode) position(x, y, w, h int) []Panel {
 	pb := pn.Panel.GetBase()
 	pb.x, pb.y, pb.w, pb.h = x, y, w, h
 	return []Panel{pn.Panel}
 }
 
-func (hs *HorizontalSplit) Position(x, y, w, h int) []Panel {
+func (hs *HorizontalSplit) position(x, y, w, h int) []Panel {
 	leftW := w / 2
 	rightW := w - leftW
 	var panels []Panel
-	panels = append(panels, hs.Left.Position(x, y, leftW, h)...)
-	panels = append(panels, hs.Right.Position(x+leftW, y, rightW, h)...)
+	panels = append(panels, hs.Left.position(x, y, leftW, h)...)
+	panels = append(panels, hs.Right.position(x+leftW, y, rightW, h)...)
 	return panels
 }
 
-func (vs *VerticalSplit) Position(x, y, w, h int) []Panel {
+func (vs *VerticalSplit) position(x, y, w, h int) []Panel {
 	topH := h / 2
 	bottomH := h - topH
 	var panels []Panel
-	panels = append(panels, vs.Top.Position(x, y, w, topH)...)
-	panels = append(panels, vs.Bottom.Position(x, y+topH, w, bottomH)...)
+	panels = append(panels, vs.Top.position(x, y, w, topH)...)
+	panels = append(panels, vs.Bottom.position(x, y+topH, w, bottomH)...)
 	return panels
 }

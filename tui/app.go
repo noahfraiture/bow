@@ -10,21 +10,25 @@ import (
 	"time"
 )
 
+// App manages the terminal user interface, handling panel layout, input, and rendering.
+// It runs the main event loop, positions panels, and redraws the screen.
 type App struct {
-	term      *Terminal
+	term      *terminal
 	panels    []Panel
-	layout    Layout
+	layout    layout
 	activeIdx int
 	running   bool
 	sigch     chan os.Signal
 }
 
-func NewApp(layout Layout) *App {
+// NewApp creates a new App instance with the given layout.
+// Initializes terminal settings and positions panels.
+func NewApp(layout layout) *App {
 	cols, rows, err := getTermSize()
 	if err != nil {
 		cols, rows = 80, 24
 	}
-	term := &Terminal{
+	term := &terminal{
 		cols:   cols,
 		rows:   rows,
 		reader: bufio.NewReader(os.Stdin),
@@ -38,11 +42,13 @@ func NewApp(layout Layout) *App {
 	return app
 }
 
-func (a *App) layoutPanels(layout Layout) {
-	a.panels = layout.Position(0, 0, a.term.cols, a.term.rows-1) // leave space for status
+func (a *App) layoutPanels(layout layout) {
+	a.panels = layout.position(0, 0, a.term.cols, a.term.rows-1)
 	a.activeIdx = 0
 }
 
+// Run starts the application's main loop, handling input and rendering until quit.
+// Enables raw mode, processes events, and cleans up on exit.
 func (a *App) Run() {
 	prev, err := enableRawMode()
 	if err == nil {
@@ -60,8 +66,8 @@ func (a *App) Run() {
 				if err == nil {
 					a.term.cols = cols
 					a.term.rows = rows
-					a.layoutPanels(a.layout) // need to store layout
-					a.draw()                 // redraw after resize
+					a.layoutPanels(a.layout)
+					a.draw() // redraw after resize
 				}
 			} else {
 				a.running = false
@@ -93,7 +99,6 @@ func (a *App) Run() {
 	}
 }
 
-// Drawing
 func (a *App) draw() {
 	clearScreen()
 	for i, p := range a.panels {
@@ -102,7 +107,7 @@ func (a *App) draw() {
 		if content == "" {
 			continue
 		}
-		full := p.GetBase().WrapWithBorder(content, active)
+		full := p.GetBase().wrapWithBorder(content, active)
 		if full == "" {
 			continue
 		}
@@ -111,13 +116,12 @@ func (a *App) draw() {
 			if j >= p.GetBase().h {
 				break
 			}
-			WriteAt(p.GetBase().x, p.GetBase().y+j, line)
+			writeAt(p.GetBase().x, p.GetBase().y+j, line)
 		}
 	}
 	status := " Tab: switch  •  ↑/↓: navigate  •  ←/→: move cursor  •  Enter: confirm  •  q/Ctrl-C: quit "
-	WriteAt(0, a.term.rows-1, padRightRuneString(status, a.term.cols))
+	writeAt(0, a.term.rows-1, padRightRuneString(status, a.term.cols))
 
-	// Handle cursor visibility and position for text panels
 	if tp, ok := a.panels[a.activeIdx].(*TextPanel); ok && a.activeIdx < len(a.panels) {
 		fmt.Print(ShowCursor)
 		var startX, startY, maxX int
@@ -138,16 +142,14 @@ func (a *App) draw() {
 		if cursorX > maxX {
 			cursorX = maxX
 		}
-		WriteAt(cursorX, startY, "")
+		writeAt(cursorX, startY, "")
 	} else {
 		fmt.Print(HideCursor)
 	}
 	fmt.Print(Reset)
 }
 
-// Input handling
 func (a *App) handleByte(b byte) {
-	// Handle escape sequences for arrow keys
 	if b == KeyEsc {
 		next1, err := a.term.reader.ReadByte()
 		if err != nil {
@@ -158,7 +160,6 @@ func (a *App) handleByte(b byte) {
 			if err != nil {
 				return
 			}
-			// Convert escape sequences to simple bytes for panel.Update()
 			switch next2 {
 			case 'A':
 				b = 65 // up arrow -> 'A'
@@ -174,17 +175,15 @@ func (a *App) handleByte(b byte) {
 		}
 	}
 
-	// Handle app-level keys first
 	switch b {
 	case KeyTab:
 		a.switchPanel()
 		return
-	case 'q', 'Q', 3, 4: // quit keys (q, Q, Ctrl-C, Ctrl-D)
+	case 'q', 'Q', 3, 4:
 		a.running = false
 		return
 	}
 
-	// Let the active panel handle the input
 	if a.activeIdx < len(a.panels) {
 		needsRedraw := a.panels[a.activeIdx].Update(b)
 		if needsRedraw {

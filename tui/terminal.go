@@ -8,14 +8,13 @@ import (
 	"strings"
 )
 
-type Terminal struct {
+type terminal struct {
 	cols     int
 	rows     int
 	reader   *bufio.Reader
 	prevStty string
 }
 
-// Terminal helpers
 func enableRawMode() (prev string, err error) {
 	out, err := exec.Command("sh", "-c", "stty -g < /dev/tty").Output()
 	if err != nil {
@@ -50,7 +49,7 @@ func getTermSize() (cols, rows int, err error) {
 	return 80, 24, fmt.Errorf("unexpected stty size output")
 }
 
-func WriteAt(x, y int, s string) {
+func writeAt(x, y int, s string) {
 	fmt.Printf("\x1b[%d;%dH%s", y+1, x+1, s)
 }
 
