@@ -1,12 +1,15 @@
 package tui
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // ListPanel is a panel that displays a list of items with selection.
 // Embed PanelBase for positioning and borders. Override Draw to customize appearance.
-type ListPanel struct {
+type ListPanel[T fmt.Stringer] struct {
 	PanelBase
-	Items    []string
+	Items    []T
 	Selected int
 }
 
@@ -27,7 +30,7 @@ type InfoPanel struct {
 
 // Update handles input for the ListPanel, updating selection based on keys.
 // Returns true if the panel needs to be redrawn.
-func (lp *ListPanel) Update(msg InputMessage) bool {
+func (lp *ListPanel[T]) Update(msg InputMessage) bool {
 	switch {
 	case msg.IsChar('k'), msg.IsKey(KeyUp):
 		if lp.Selected > 0 {
@@ -45,7 +48,7 @@ func (lp *ListPanel) Update(msg InputMessage) bool {
 
 // Draw renders the ListPanel's content as a string.
 // Highlights the selected item based on active state.
-func (lp *ListPanel) Draw(active bool) string {
+func (lp *ListPanel[T]) Draw(active bool) string {
 	var lines []string
 	for i, item := range lp.Items {
 		color := ""
@@ -56,7 +59,7 @@ func (lp *ListPanel) Draw(active bool) string {
 				color = ClrYellow
 			}
 		}
-		lines = append(lines, color+item+Reset)
+		lines = append(lines, color+item.String()+Reset)
 	}
 	return strings.Join(lines, "\n")
 }

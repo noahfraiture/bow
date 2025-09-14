@@ -2,100 +2,107 @@ package main
 
 import (
 	"app/tui"
+	"bytes"
 	"fmt"
+	"log"
+	"os"
 	"strings"
+
+	"github.com/go-git/go-git/v6"
+	"github.com/go-git/go-git/v6/plumbing/object"
 )
 
-// CustomPanel demonstrates how to create custom panels
-type CounterPanel struct {
-	tui.PanelBase
-	Count int
+const (
+	colorReset  = "\033[0m"
+	colorRed    = "\033[31m"
+	colorGreen  = "\033[32m"
+	colorYellow = "\033[33m"
+	colorBlue   = "\033[34m"
+	colorPurple = "\033[35m"
+	colorCyan   = "\033[36m"
+	colorWhite  = "\033[37m"
+)
+
+type commit struct {
+	*object.Commit
 }
 
-func (cp *CounterPanel) Update(msg tui.InputMessage) bool {
-	switch {
-	case msg.IsChar('+'):
-		cp.Count++
-		return true
-	case msg.IsChar('-'):
-		cp.Count--
-		return true
-	}
-	return false
+func (c commit) String() string {
+	msg := strings.TrimRight(c.Message, "\n")
+	return fmt.Sprintf("%s%s%s: %s", colorYellow, c.Hash.String()[:6], colorReset, msg)
 }
 
-func (cp *CounterPanel) Draw(active bool) string {
-	countStr := fmt.Sprintf("Count: %d", cp.Count)
-	instructions := []string{
-		"Use + to increment",
-		"Use - to decrement",
+type commitPanel struct {
+	*tui.ListPanel[commit]
+}
+
+func (c commitPanel) Draw(_ bool) string {
+	var buffer bytes.Buffer
+	for i, item := range c.Items {
+		if c.Selected == i {
+			buffer.WriteString(fmt.Sprintf("%s*%s %s\n", colorRed, colorReset, item.String()))
+		} else {
+			buffer.WriteString(fmt.Sprintf("%s\n", item.String()))
+		}
 	}
-	lines := []string{countStr}
-	lines = append(lines, instructions...)
-	return strings.Join(lines, "\n")
+	return buffer.String()
+}
+
+func createApp() (*tui.App, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	repo, err := git.PlainOpen(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	commitsIter, err := repo.CommitObjects()
+	if err != nil {
+		return nil, err
+	}
+	commits := []commit{}
+	err = commitsIter.ForEach(func(c *object.Commit) error {
+		commits = append(commits, commit{c})
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	diffFrom := commitPanel{
+		ListPanel: &tui.ListPanel[commit]{
+			PanelBase: tui.PanelBase{
+				Title:  "Diff From",
+				Border: true,
+			},
+			Items: commits,
+		}}
+
+	diffOn := commitPanel{
+		ListPanel: &tui.ListPanel[commit]{
+			PanelBase: tui.PanelBase{
+				Title:  "Diff on",
+				Border: true,
+			},
+			Items: commits,
+		}}
+
+	app := tui.NewApp(&tui.HorizontalSplit{
+		Left:  &tui.PanelNode{Panel: diffFrom},
+		Right: &tui.PanelNode{Panel: diffOn},
+	})
+
+	return app, nil
 }
 
 func main() {
-	files := &tui.ListPanel{
-		PanelBase: tui.PanelBase{Title: "Files", Border: true},
-		Items:     []string{"main.go", "config.json", "README.md", "Dockerfile", "go.mod", "utils.go"},
-		Selected:  0,
-	}
-	commands := &tui.ListPanel{
-		PanelBase: tui.PanelBase{Title: "Commands", Border: true},
-		Items:     []string{"git status", "git add .", "git commit", "git push", "go run .", "go test"},
-		Selected:  0,
-	}
-	input := &tui.TextPanel{
-		PanelBase: tui.PanelBase{Title: "Input", Border: true},
-		Text:      []rune{},
-		Cursor:    0,
-	}
-	input2 := &tui.TextPanel{
-		PanelBase: tui.PanelBase{Title: "Input", Border: false},
-		Text:      []rune{},
-		Cursor:    0,
-	}
-	counter := &CounterPanel{
-		PanelBase: tui.PanelBase{Title: "Counter", Border: true},
-		Count:     0,
+	app, err := createApp()
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	info := &tui.InfoPanel{
-		PanelBase: tui.PanelBase{Title: "Info", Border: true},
-		Lines: []string{
-			"Multi-panel TUI demo",
-			"",
-			"Controls:",
-			"  Tab       - switch panels",
-			"  ↑/↓       - navigate lists",
-			"  ←/→       - move cursor in input",
-			"  + / -     - change counter",
-			"  Enter     - select/confirm",
-			"  Backspace - delete in input",
-			"  q / Ctrl-C / Ctrl-D - quit",
-			"",
-			"Current panel: Files",
-		},
-	}
-
-	layout := &tui.VerticalSplit{
-		Top: &tui.HorizontalSplit{
-			Left:  &tui.PanelNode{Panel: files},
-			Right: &tui.PanelNode{Panel: commands},
-		},
-		Bottom: &tui.HorizontalSplit{
-			Left: &tui.HorizontalSplit{
-				Left:  &tui.PanelNode{Panel: input},
-				Right: &tui.PanelNode{Panel: input2},
-			},
-			Right: &tui.HorizontalSplit{
-				Left:  &tui.PanelNode{Panel: counter},
-				Right: &tui.PanelNode{Panel: info},
-			},
-		},
-	}
-
-	app := tui.NewApp(layout)
 	app.Run()
 }

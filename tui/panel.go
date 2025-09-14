@@ -41,14 +41,7 @@ func (pb *PanelBase) Update(msg InputMessage) bool {
 // Default implementation returns empty lines fitting the panel's dimensions.
 // Override in custom panels to provide custom content.
 func (pb *PanelBase) Draw(active bool) string {
-	if pb.w <= 2 || pb.h <= 2 {
-		return ""
-	}
-	lines := make([]string, pb.h-2)
-	for i := range lines {
-		lines[i] = ""
-	}
-	return strings.Join(lines, "\n")
+	return ""
 }
 
 func (pb *PanelBase) wrapWithBorder(content string, active bool) string {
