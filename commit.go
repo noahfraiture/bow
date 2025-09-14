@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/go-git/go-git/v6"
@@ -51,7 +52,9 @@ func getCommits() ([]commit, error) {
 		return nil, fmt.Errorf("failed to get current working directory: %w", err)
 	}
 
-	repo, err := git.PlainOpen(dir)
+	// TODO automatic detection of root of repo
+	relative := os.Args[1]
+	repo, err := git.PlainOpen(path.Join(dir, relative))
 	if err != nil {
 		return nil, fmt.Errorf("failed to open git repository at %s: %w", dir, err)
 	}
