@@ -21,4 +21,5 @@ const (
 	KeyEnter     = 13
 	KeyEsc       = 27
 	KeyBackspace = 127
+	KeySpace     = 32
 )

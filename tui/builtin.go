@@ -27,14 +27,14 @@ type InfoPanel struct {
 
 // Update handles input for the ListPanel, updating selection based on keys.
 // Returns true if the panel needs to be redrawn.
-func (lp *ListPanel) Update(input byte) bool {
-	switch input {
-	case 'k', 65:
+func (lp *ListPanel) Update(msg InputMessage) bool {
+	switch {
+	case msg.IsChar('k'), msg.IsArrow(KeyUp):
 		if lp.Selected > 0 {
 			lp.Selected--
 			return true
 		}
-	case 'j', 66:
+	case msg.IsChar('j'), msg.IsArrow(KeyDown):
 		if lp.Selected < len(lp.Items)-1 {
 			lp.Selected++
 			return true
@@ -64,37 +64,49 @@ func (lp *ListPanel) Draw(active bool) string {
 // Update handles input for the TextPanel, managing cursor and text editing.
 // Supports arrow keys, backspace, enter, and printable characters.
 // Returns true if the panel needs to be redrawn.
-func (tp *TextPanel) Update(input byte) bool {
-	switch input {
-	case 68:
+func (tp *TextPanel) Update(msg InputMessage) bool {
+	switch {
+	case msg.IsArrow(KeyLeft):
 		if tp.Cursor > 0 {
 			tp.Cursor--
 			return true
 		}
-	case 67:
+	case msg.IsArrow(KeyRight):
 		if tp.Cursor < len(tp.Text) {
 			tp.Cursor++
 			return true
 		}
-	case 127, 8:
+	case msg.IsSpecial(KeyBackspace):
 		if tp.Cursor > 0 && len(tp.Text) > 0 {
 			i := tp.Cursor
 			tp.Text = append(tp.Text[:i-1], tp.Text[i:]...)
 			tp.Cursor--
 			return true
 		}
-	case 13, 10:
+	case msg.IsSpecial(KeyEnter):
 		tp.Text = []rune{}
 		tp.Cursor = 0
 		return true
+	case msg.IsChar(' '):
+		// Handle space character
+		i := tp.Cursor
+		before := tp.Text[:i]
+		after := tp.Text[i:]
+		newText := make([]rune, 0, len(before)+1+len(after))
+		newText = append(newText, before...)
+		newText = append(newText, ' ')
+		newText = append(newText, after...)
+		tp.Text = newText
+		tp.Cursor++
+		return true
 	default:
-		if input >= 32 && input <= 126 { // printable characters
+		if msg.Key == KeyTypeChar && msg.Char >= 32 && msg.Char <= 126 {
 			i := tp.Cursor
 			before := tp.Text[:i]
 			after := tp.Text[i:]
 			newText := make([]rune, 0, len(before)+1+len(after))
 			newText = append(newText, before...)
-			newText = append(newText, rune(input))
+			newText = append(newText, msg.Char)
 			newText = append(newText, after...)
 			tp.Text = newText
 			tp.Cursor++
@@ -116,7 +128,7 @@ func (tp *TextPanel) Draw(active bool) string {
 // Update handles input for the InfoPanel.
 // No-op implementation; InfoPanel does not respond to input.
 // Returns false.
-func (ip *InfoPanel) Update(input byte) bool {
+func (ip *InfoPanel) Update(msg InputMessage) bool {
 	return false
 }
 

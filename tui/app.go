@@ -85,16 +85,12 @@ func (a *App) Run() {
 	a.draw()
 
 	for a.running {
-		b, err := a.term.reader.ReadByte()
+		msg, err := a.parseInput()
 		if err != nil {
 			time.Sleep(10 * time.Millisecond)
 			continue
 		}
-		if b == 0x03 || b == 0x04 {
-			a.running = false
-			break
-		}
-		a.handleByte(b)
+		a.handleMessage(msg)
 		a.draw()
 	}
 }
@@ -149,49 +145,148 @@ func (a *App) draw() {
 	fmt.Print(Reset)
 }
 
-func (a *App) handleByte(b byte) {
+func (a *App) switchPanel() {
+	a.activeIdx = (a.activeIdx + 1) % len(a.panels)
+}
+
+// parseInput reads and parses input into an InputMessage
+func (a *App) parseInput() (InputMessage, error) {
+	b, err := a.term.reader.ReadByte()
+	if err != nil {
+		return InputMessage{}, err
+	}
+
+	raw := []byte{b}
+
+	// Handle escape sequences
 	if b == KeyEsc {
 		next1, err := a.term.reader.ReadByte()
 		if err != nil {
-			return
+			return InputMessage{}, err
 		}
+		raw = append(raw, next1)
+
 		if next1 == '[' {
 			next2, err := a.term.reader.ReadByte()
 			if err != nil {
-				return
+				return InputMessage{}, err
 			}
+			raw = append(raw, next2)
+
 			switch next2 {
 			case 'A':
-				b = 65 // up arrow -> 'A'
+				return NewArrowMessage(KeyUp, raw), nil
 			case 'B':
-				b = 66 // down arrow -> 'B'
+				return NewArrowMessage(KeyDown, raw), nil
 			case 'C':
-				b = 67 // right arrow -> 'C'
+				return NewArrowMessage(KeyRight, raw), nil
 			case 'D':
-				b = 68 // left arrow -> 'D'
+				return NewArrowMessage(KeyLeft, raw), nil
+			case 'H':
+				return NewNavigationMessage(KeyHome, raw), nil
+			case 'F':
+				return NewNavigationMessage(KeyEnd, raw), nil
+			case '5':
+				tilde, err := a.term.reader.ReadByte()
+				if err != nil {
+					return InputMessage{}, err
+				}
+				raw = append(raw, tilde)
+				if tilde == '~' {
+					return NewNavigationMessage(KeyPageUp, raw), nil
+				}
+			case '6':
+				tilde, err := a.term.reader.ReadByte()
+				if err != nil {
+					return InputMessage{}, err
+				}
+				raw = append(raw, tilde)
+				if tilde == '~' {
+					return NewNavigationMessage(KeyPageDown, raw), nil
+				}
+			case '2':
+				tilde, err := a.term.reader.ReadByte()
+				if err != nil {
+					return InputMessage{}, err
+				}
+				raw = append(raw, tilde)
+				if tilde == '~' {
+					return NewSpecialMessage(KeyInsert, raw), nil
+				}
+			case '3':
+				tilde, err := a.term.reader.ReadByte()
+				if err != nil {
+					return InputMessage{}, err
+				}
+				raw = append(raw, tilde)
+				if tilde == '~' {
+					return NewSpecialMessage(KeyDelete, raw), nil
+				}
 			}
-		} else {
-			return
+		} else if next1 >= 'O' && next1 <= 'Z' {
+			// Function keys F1-F4
+			switch next1 {
+			case 'P':
+				return NewSpecialMessage(KeyF1, raw), nil
+			case 'Q':
+				return NewSpecialMessage(KeyF2, raw), nil
+			case 'R':
+				return NewSpecialMessage(KeyF3, raw), nil
+			case 'S':
+				return NewSpecialMessage(KeyF4, raw), nil
+			}
 		}
+		// Unknown escape sequence, return as special key
+		return NewSpecialMessage(int(b), raw), nil
 	}
 
+	// Handle special keys
 	switch b {
 	case KeyTab:
+		return NewSpecialMessage(KeyTab, raw), nil
+	case KeyEnter:
+		return NewSpecialMessage(KeyEnter, raw), nil
+	case KeyBackspace:
+		return NewSpecialMessage(KeyBackspace, raw), nil
+	case KeySpace:
+		return NewCharMessage(' ', raw), nil
+	case 0x03, 0x04: // Ctrl+C, Ctrl+D
+		msg := NewSpecialMessage(KeyEsc, raw)
+		msg.Modifiers = append(msg.Modifiers, ModCtrl)
+		return msg, nil
+	}
+
+	// Handle printable characters
+	if b >= 32 && b <= 126 {
+		return NewCharMessage(rune(b), raw), nil
+	}
+
+	// Handle control characters
+	if b < 32 {
+		msg := NewCharMessage(rune(b), raw)
+		msg.Modifiers = append(msg.Modifiers, ModCtrl)
+		return msg, nil
+	}
+
+	// Default to special key
+	return NewSpecialMessage(int(b), raw), nil
+}
+
+// handleMessage processes an InputMessage
+func (a *App) handleMessage(msg InputMessage) {
+	switch {
+	case msg.IsSpecial(KeyTab):
 		a.switchPanel()
 		return
-	case 'q', 'Q', 3, 4:
+	case msg.IsChar('q'), msg.IsChar('Q'):
 		a.running = false
 		return
 	}
 
 	if a.activeIdx < len(a.panels) {
-		needsRedraw := a.panels[a.activeIdx].Update(b)
+		needsRedraw := a.panels[a.activeIdx].Update(msg)
 		if needsRedraw {
 			a.draw()
 		}
 	}
-}
-
-func (a *App) switchPanel() {
-	a.activeIdx = (a.activeIdx + 1) % len(a.panels)
 }

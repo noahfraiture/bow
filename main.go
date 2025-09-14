@@ -12,12 +12,12 @@ type CounterPanel struct {
 	Count int
 }
 
-func (cp *CounterPanel) Update(input byte) bool {
-	switch input {
-	case '+':
+func (cp *CounterPanel) Update(msg tui.InputMessage) bool {
+	switch {
+	case msg.IsChar('+'):
 		cp.Count++
 		return true
-	case '-':
+	case msg.IsChar('-'):
 		cp.Count--
 		return true
 	}

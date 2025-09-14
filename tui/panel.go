@@ -26,14 +26,14 @@ func (pb *PanelBase) GetBase() *PanelBase {
 // common functionality like positioning and borders. Override Update and Draw as needed, but keep GetBase for internal use.
 type Panel interface {
 	GetBase() *PanelBase
-	Update(input byte) bool
+	Update(msg InputMessage) bool
 	Draw(active bool) string
 }
 
 // Update handles input for the base panel.
 // Default implementation does nothing and returns false.
 // Override in custom panels to handle user input.
-func (pb *PanelBase) Update(input byte) bool {
+func (pb *PanelBase) Update(msg InputMessage) bool {
 	return false
 }
 
