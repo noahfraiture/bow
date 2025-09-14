@@ -1,10 +1,40 @@
 package tui
 
 import (
+	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
+
+type CounterPanel struct {
+	PanelBase
+	Count int
+}
+
+func (cp *CounterPanel) Update(msg InputMessage) bool {
+	switch {
+	case msg.IsChar('+'):
+		cp.Count++
+		return true
+	case msg.IsChar('-'):
+		cp.Count--
+		return true
+	}
+	return false
+}
+
+func (cp *CounterPanel) Draw(active bool) string {
+	countStr := fmt.Sprintf("Count: %d", cp.Count)
+	instructions := []string{
+		"Use + to increment",
+		"Use - to decrement",
+	}
+	lines := []string{countStr}
+	lines = append(lines, instructions...)
+	return strings.Join(lines, "\n")
+}
 
 // newTestApp creates a new App instance for testing with pipe input.
 func newTestApp(layout layout) *App {
@@ -42,7 +72,6 @@ func TestCounterPanelIntegration(t *testing.T) {
 	// Start the app in goroutine
 	go app.Run()
 
-	// Send '+' to increment counter
 	w.Write([]byte{'+'})
 
 	// Wait a bit for processing
