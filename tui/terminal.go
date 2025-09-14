@@ -27,7 +27,7 @@ func enableRawMode() (prev string, err error) {
 	return prev, nil
 }
 
-func disableRawMode(prev string) {
+func DisableRawMode(prev string) {
 	if prev != "" {
 		_ = exec.Command("sh", "-c", "stty "+prev+" < /dev/tty").Run()
 	} else {
