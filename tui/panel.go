@@ -75,9 +75,9 @@ func (pb *PanelBase) wrapWithBorder(content string, active bool) string {
 		return strings.Join(lines, "\n")
 	}
 
-	color := ClrWhite
+	color := clrWhite
 	if active {
-		color = ClrCyan
+		color = clrCyan
 	}
 
 	contentLines := strings.Split(content, "\n")
@@ -90,11 +90,11 @@ func (pb *PanelBase) wrapWithBorder(content string, active bool) string {
 	}
 
 	var lines []string
-	top := color + "┌" + strings.Repeat("─", pb.w-2) + "┐" + Reset
+	top := color + "┌" + strings.Repeat("─", pb.w-2) + "┐" + reset
 	if pb.Title != "" {
 		title := " [" + pb.Title + "] "
 		if utf8.RuneCountInString(title) <= pb.w-2 {
-			top = color + "┌" + title + strings.Repeat("─", pb.w-2-utf8.RuneCountInString(title)) + "┐" + Reset
+			top = color + "┌" + title + strings.Repeat("─", pb.w-2-utf8.RuneCountInString(title)) + "┐" + reset
 		}
 	}
 	lines = append(lines, top)
@@ -102,16 +102,16 @@ func (pb *PanelBase) wrapWithBorder(content string, active bool) string {
 	for _, line := range contentLines {
 		truncated := truncateToWidth(line, pb.w-2)
 		padded := truncated + strings.Repeat(" ", pb.w-2-displayWidth(truncated))
-		borderedLine := color + "│" + Reset + ClrWhite + padded + Reset + color + "│" + Reset
+		borderedLine := color + "│" + reset + clrWhite + padded + reset + color + "│" + reset
 		lines = append(lines, borderedLine)
 	}
 
 	for len(lines) < pb.h-1 {
-		emptyLine := color + "│" + Reset + ClrWhite + strings.Repeat(" ", pb.w-2) + Reset + color + "│" + Reset
+		emptyLine := color + "│" + reset + clrWhite + strings.Repeat(" ", pb.w-2) + reset + color + "│" + reset
 		lines = append(lines, emptyLine)
 	}
 
-	bottom := color + "└" + strings.Repeat("─", pb.w-2) + "┘" + Reset
+	bottom := color + "└" + strings.Repeat("─", pb.w-2) + "┘" + reset
 	lines = append(lines, bottom)
 
 	return strings.Join(lines, "\n")

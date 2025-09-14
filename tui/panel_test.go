@@ -20,21 +20,21 @@ func TestPanelBaseDraw(t *testing.T) {
 		}
 
 		// Check top border with title
-		var expectedTop = ClrCyan + "┌ [Test] ┐" + Reset
+		var expectedTop = clrCyan + "┌ [Test] ┐" + reset
 		if lines[0] != expectedTop {
 			t.Errorf("Top line mismatch: got %q, want %q", lines[0], expectedTop)
 		}
 
 		// Check middle lines (empty)
 		for i := 1; i < 4; i++ {
-			var expected = ClrCyan + "│" + Reset + ClrWhite + "        " + Reset + ClrCyan + "│" + Reset
+			var expected = clrCyan + "│" + reset + clrWhite + "        " + reset + clrCyan + "│" + reset
 			if lines[i] != expected {
 				t.Errorf("Line %d mismatch: got %q, want %q", i, lines[i], expected)
 			}
 		}
 
 		// Check bottom border
-		var expectedBottom = ClrCyan + "└────────┘" + Reset
+		var expectedBottom = clrCyan + "└────────┘" + reset
 		if lines[4] != expectedBottom {
 			t.Errorf("Bottom line mismatch: got %q, want %q", lines[4], expectedBottom)
 		}
@@ -43,7 +43,7 @@ func TestPanelBaseDraw(t *testing.T) {
 		result = pb.Draw(false)
 		full = pb.wrapWithBorder(result, false)
 		lines = strings.Split(full, "\n")
-		expectedTop = ClrWhite + "┌ [Test] ┐" + Reset
+		expectedTop = clrWhite + "┌ [Test] ┐" + reset
 		if lines[0] != expectedTop {
 			t.Errorf("Inactive top line mismatch: got %q, want %q", lines[0], expectedTop)
 		}
@@ -53,21 +53,21 @@ func TestPanelBaseDraw(t *testing.T) {
 		result = pb.Draw(true)
 		full = pb.wrapWithBorder(result, true)
 		lines = strings.Split(full, "\n")
-		expectedTop = ClrCyan + "┌────────┐" + Reset
+		expectedTop = clrCyan + "┌────────┐" + reset
 		if lines[0] != expectedTop {
 			t.Errorf("No title top line mismatch: got %q, want %q", lines[0], expectedTop)
 		}
 
 		// Check middle lines (empty)
 		for i := 1; i < 4; i++ {
-			expected := ClrCyan + "│" + Reset + ClrWhite + "        " + Reset + ClrCyan + "│" + Reset
+			expected := clrCyan + "│" + reset + clrWhite + "        " + reset + clrCyan + "│" + reset
 			if lines[i] != expected {
 				t.Errorf("Line %d mismatch: got %q, want %q", i, lines[i], expected)
 			}
 		}
 
 		// Check bottom border
-		expectedBottom = ClrCyan + "└────────┘" + Reset
+		expectedBottom = clrCyan + "└────────┘" + reset
 		if lines[4] != expectedBottom {
 			t.Errorf("Bottom line mismatch: got %q, want %q", lines[4], expectedBottom)
 		}
@@ -165,13 +165,13 @@ func TestListPanelDraw(t *testing.T) {
 		// Title is handled by app, not in panel Draw
 
 		// Check first item (selected, active)
-		var expectedItem1 = ClrCyan + "│" + Reset + ClrWhite + Reverse + "item1" + Reset + "   " + Reset + ClrCyan + "│" + Reset
+		var expectedItem1 = clrCyan + "│" + reset + clrWhite + Reverse + "item1" + reset + "   " + reset + clrCyan + "│" + reset
 		if lines[1] != expectedItem1 {
 			t.Errorf("Item1 mismatch: got %q, want %q", lines[1], expectedItem1)
 		}
 
 		// Check second item
-		var expectedItem2 = ClrCyan + "│" + Reset + ClrWhite + "item2" + Reset + "   " + Reset + ClrCyan + "│" + Reset
+		var expectedItem2 = clrCyan + "│" + reset + clrWhite + "item2" + reset + "   " + reset + clrCyan + "│" + reset
 		if lines[2] != expectedItem2 {
 			t.Errorf("Item2 mismatch: got %q, want %q", lines[2], expectedItem2)
 		}
@@ -216,13 +216,13 @@ func TestListPanelDraw(t *testing.T) {
 		}
 
 		// Check first item (selected, active)
-		expectedItem1 := Reverse + "item1" + Reset + "     "
+		expectedItem1 := Reverse + "item1" + reset + "     "
 		if lines[1] != expectedItem1 {
 			t.Errorf("Item1 mismatch: got %q, want %q", lines[1], expectedItem1)
 		}
 
 		// Check second item
-		expectedItem2 := "item2" + Reset + "     "
+		expectedItem2 := "item2" + reset + "     "
 		if lines[2] != expectedItem2 {
 			t.Errorf("Item2 mismatch: got %q, want %q", lines[2], expectedItem2)
 		}
@@ -269,7 +269,7 @@ func TestTextPanelDraw(t *testing.T) {
 		}
 
 		// Check text content
-		var expectedText = ClrCyan + "│" + Reset + ClrWhite + "hello   " + Reset + ClrCyan + "│" + Reset
+		var expectedText = clrCyan + "│" + reset + clrWhite + "hello   " + reset + clrCyan + "│" + reset
 		if lines[1] != expectedText {
 			t.Errorf("Text line mismatch: got %q, want %q", lines[1], expectedText)
 		}
@@ -363,7 +363,7 @@ func TestInfoPanelDraw(t *testing.T) {
 		}
 
 		// Check lines
-		var expectedLine1 = ClrCyan + "│" + Reset + ClrWhite + "line1   " + Reset + ClrCyan + "│" + Reset
+		var expectedLine1 = clrCyan + "│" + reset + clrWhite + "line1   " + reset + clrCyan + "│" + reset
 		if lines[1] != expectedLine1 {
 			t.Errorf("Line1 mismatch: got %q, want %q", lines[1], expectedLine1)
 		}

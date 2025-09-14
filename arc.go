@@ -15,13 +15,15 @@ const (
 	_ status = iota
 	NeedReview
 	Draft
-	RequestedChange
+	ChangesPlanned
+	Accepted
 )
 
 var stringToStatus = map[string]status{
 	"Needs Review":    NeedReview,
 	"Draft":           Draft,
-	"Request Changes": RequestedChange,
+	"Changes Planned": ChangesPlanned,
+	"Accepted":        Accepted,
 }
 
 func (s status) String() string {
@@ -30,10 +32,12 @@ func (s status) String() string {
 		return colorYellow + "Needs Review" + colorReset
 	case Draft:
 		return colorGreen + "Draft" + colorReset
-	case RequestedChange:
-		return colorRed + "Requested Changes" + colorReset
+	case ChangesPlanned:
+		return colorRed + "Changes Planned" + colorReset
+	case Accepted:
+		return colorCyan + "Accepted" + colorReset
 	default:
-		panic("Unknown status")
+		panic(fmt.Sprintf("Unknown status: %d", s))
 	}
 }
 
@@ -72,7 +76,7 @@ func (dp *diffPanel) Update(msg tui.InputMessage) bool {
 	return redraw
 }
 
-var diffRe = regexp.MustCompile(`(Needs Review|Draft|Request Changes).+(D\d{5}): (.*)`)
+var diffRe = regexp.MustCompile(`(Needs Review|Draft|Changes Planned|Accepted).+(D\d{5}): (.*)`)
 
 func parseDiff(line string) (diff, bool) {
 	line = strings.TrimSpace(line)
@@ -91,26 +95,6 @@ func parseDiff(line string) (diff, bool) {
 		return diff{}, false
 	}
 	return diff{status: status, id: id, message: message}, true
-}
-
-func getDiffTest() ([]diff, error) {
-	return []diff{
-		{
-			status:  NeedReview,
-			id:      "D12345",
-			message: "message that needs review",
-		},
-		{
-			status:  Draft,
-			id:      "D67890",
-			message: "still a draft",
-		},
-		{
-			status:  RequestedChange,
-			id:      "D07312",
-			message: "you have to make changes",
-		},
-	}, nil
 }
 
 func getDiff() ([]diff, error) {

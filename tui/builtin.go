@@ -56,10 +56,10 @@ func (lp *ListPanel[T]) Draw(active bool) string {
 			if active {
 				color = Reverse
 			} else {
-				color = ClrYellow
+				color = clrYellow
 			}
 		}
-		lines = append(lines, fmt.Sprintf("%s%v%s", color, item, Reset))
+		lines = append(lines, fmt.Sprintf("%s%v%s", color, item, reset))
 	}
 	return strings.Join(lines, "\n")
 }

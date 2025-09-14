@@ -6,12 +6,12 @@ const (
 	Home       = Esc + "[H"
 	HideCursor = Esc + "[?25l"
 	ShowCursor = Esc + "[?25h"
-	Reset      = Esc + "[0m"
-	Bold       = Esc + "[1m"
+	reset      = Esc + "[0m"
+	bold       = Esc + "[1m"
 	Reverse    = Esc + "[7m"
 
-	ClrWhite  = Esc + "[37m"
-	ClrCyan   = Esc + "[36m"
-	ClrYellow = Esc + "[33m"
-	ClrGreen  = Esc + "[32m"
+	clrWhite  = Esc + "[37m"
+	clrCyan   = Esc + "[36m"
+	clrYellow = Esc + "[33m"
+	clrGreen  = Esc + "[32m"
 )

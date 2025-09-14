@@ -16,7 +16,7 @@ type commit struct {
 }
 
 func (c commit) String() string {
-	msg := strings.TrimRight(c.Message, "\n")
+	msg := strings.TrimRight(strings.SplitN(c.Message, "\n", 2)[0], "\n")
 	return fmt.Sprintf("%s%s%s: %s", colorYellow, c.Hash.String()[:6], colorReset, msg)
 }
 

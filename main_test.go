@@ -19,7 +19,7 @@ func TestParseDiff(t *testing.T) {
 	}{
 		{"Needs Review D12345: Test message", diff{status: NeedReview, id: "D12345", message: "Test message"}, true},
 		{"Draft D67890: Another message", diff{status: Draft, id: "D67890", message: "Another message"}, true},
-		{"Request Changes D07312: Change message", diff{status: RequestedChange, id: "D07312", message: "Change message"}, true},
+		{"Changes Planned D07312: Change message", diff{status: ChangesPlanned, id: "D07312", message: "Change message"}, true},
 		{"", diff{}, false},
 		{"Invalid Status D12345: Message", diff{}, false},
 		{"Needs Review D12345", diff{}, false},   // Missing message
