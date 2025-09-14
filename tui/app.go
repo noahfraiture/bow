@@ -76,7 +76,7 @@ func (a *App) Run() {
 	}()
 
 	defer func() {
-		DisableRawMode(a.term.prevStty)
+		disableRawMode(a.term.prevStty)
 		fmt.Print(ShowCursor)
 		clearScreen()
 	}()
