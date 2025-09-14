@@ -290,3 +290,12 @@ func (a *App) handleMessage(msg InputMessage) {
 		}
 	}
 }
+
+// padRightRuneString pads s with spaces to width w, truncating if longer.
+func padRightRuneString(s string, w int) string {
+	r := []rune(s)
+	if len(r) >= w {
+		return string(r[:w])
+	}
+	return string(r) + strings.Repeat(" ", w-len(r))
+}

@@ -117,6 +117,64 @@ func (pb *PanelBase) wrapWithBorder(content string, active bool) string {
 	return strings.Join(lines, "\n")
 }
 
+// truncateToWidth truncates s to width w, preserving ANSI codes and adding ".." if needed.
+func truncateToWidth(s string, w int) string {
+	if displayWidth(s) <= w {
+		return s
+	}
+	var result strings.Builder
+	visible := 0
+	inEscape := false
+	truncated := false
+	for _, r := range s {
+		if r == '\x1b' {
+			inEscape = true
+			result.WriteRune(r)
+		} else if inEscape {
+			result.WriteRune(r)
+			if r == 'm' {
+				inEscape = false
+			}
+		} else {
+			if !truncated {
+				if visible < w {
+					result.WriteRune(r)
+					visible++
+					if visible == w-2 && w > 2 {
+						result.WriteString("..")
+						truncated = true
+						visible += 2
+					}
+				} else {
+					truncated = true
+				}
+			}
+		}
+	}
+	return result.String()
+}
+
+// displayWidth calculates the visible width of s, ignoring ANSI escape sequences.
+func displayWidth(s string) int {
+	count := 0
+	inEscape := false
+	for i := 0; i < len(s); {
+		r, size := utf8.DecodeRuneInString(s[i:])
+		if r == '\x1b' {
+			inEscape = true
+		}
+		if inEscape {
+			if r == 'm' {
+				inEscape = false
+			}
+		} else {
+			count++
+		}
+		i += size
+	}
+	return count
+}
+
 type layout interface {
 	position(x, y, w, h int) []Panel
 }

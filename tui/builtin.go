@@ -59,7 +59,7 @@ func (lp *ListPanel[T]) Draw(active bool) string {
 				color = ClrYellow
 			}
 		}
-		lines = append(lines, fmt.Sprintf("%s%s%s", color, item, Reset))
+		lines = append(lines, fmt.Sprintf("%s%v%s", color, item, Reset))
 	}
 	return strings.Join(lines, "\n")
 }
