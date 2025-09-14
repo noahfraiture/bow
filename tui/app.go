@@ -250,10 +250,6 @@ func (a *App) parseInput() (InputMessage, error) {
 		return newKeyMessage(KeyBackspace, raw), nil
 	case byte(KeySpace):
 		return newCharMessage(' ', raw), nil
-	case 0x03, 0x04: // Ctrl+C, Ctrl+D
-		msg := newKeyMessage(KeyEsc, raw)
-		msg.modifiers = append(msg.modifiers, ModCtrl)
-		return msg, nil
 	}
 
 	// Handle printable characters
@@ -279,6 +275,9 @@ func (a *App) handleMessage(msg InputMessage) {
 		a.switchPanel()
 		return
 	case msg.IsChar('q'), msg.IsChar('Q'):
+		a.running = false
+		return
+	case msg.IsChar('\x03'): // Ctrl+C
 		a.running = false
 		return
 	}
