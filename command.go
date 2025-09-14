@@ -4,7 +4,6 @@ import (
 	"app/tui"
 	"errors"
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 )
@@ -26,11 +25,11 @@ type commandPanel struct {
 
 func (cp *commandPanel) Update(msg tui.InputMessage) bool {
 	if msg.IsKey(tui.KeyEnter) {
+		cp.Stop()
 		err := cp.runCmd()
 		if err != nil {
 			panic(err)
 		}
-		os.Exit(0)
 	}
 	return cp.ListPanel.Update(msg)
 }
@@ -60,7 +59,8 @@ func (cp *commandPanel) runCmd() error {
 	switch cp.Items[cp.Selected] {
 	case Create:
 	case Update:
-		// TODO : checkout
+		// FIX : does nothing and no log
+		// Could write logs stdout and stderr in a file
 		cmd := exec.Command("arc", "diff", "--raw", "--update", cp.diff.id, "--message", *cp.msg)
 		cmd.Stdin = patcherReader
 		return cmd.Run()

@@ -9,10 +9,17 @@ import (
 // It should be embedded (using an unnamed field) in custom panel structs to enable
 // positioning, borders, and default behavior. Users can override Update and Draw methods.
 type PanelBase struct {
-	x, y   int
-	w, h   int
-	Title  string
-	Border bool
+	x, y     int
+	w, h     int
+	Title    string
+	Border   bool
+	stopping bool
+}
+
+// Stop give the possibility to properly stop the app.
+// Sending stop to any panel will stop the application at the next app update
+func (pb *PanelBase) Stop() {
+	pb.stopping = true
 }
 
 // GetBase returns the PanelBase instance.

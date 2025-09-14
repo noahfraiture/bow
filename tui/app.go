@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"slices"
 	"strings"
 	"syscall"
 	"time"
@@ -88,6 +89,11 @@ func (a *App) Run() {
 	a.draw()
 
 	for a.running {
+		if slices.ContainsFunc(a.panels, func(panel Panel) bool {
+			return panel.GetBase().stopping
+		}) {
+			break
+		}
 		msg, err := a.parseInput()
 		if err != nil {
 			time.Sleep(10 * time.Millisecond)
