@@ -1,0 +1,27 @@
+package main
+
+import "app/tui"
+
+type messagePanel struct {
+	*tui.TextPanel
+	msg *string
+}
+
+func (mp *messagePanel) Update(msg tui.InputMessage) bool {
+	redraw := mp.TextPanel.Update(msg)
+	*mp.msg = string(mp.Text)
+	return redraw
+}
+
+func newMessagePanel(name string, msg *string) messagePanel {
+	return messagePanel{
+		TextPanel: &tui.TextPanel{
+			PanelBase: tui.PanelBase{
+				Title:  name,
+				Border: true,
+			},
+			Text: []rune{},
+		},
+		msg: msg,
+	}
+}

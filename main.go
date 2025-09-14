@@ -13,18 +13,23 @@ func createApp() (*tui.App, error) {
 	}
 	diffFrom := newCommitPanel("Diff from", commits)
 	diffOn := newCommitPanel("Diff on", commits)
+	diffOn.Selected = 1
 
-	diffs, err := getDiffTest()
+	diffs, err := getDiff()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create app: %w", err)
 	}
 	diffToUpdate := newDiffPanel("Diff to update", diffs)
+
+	var msg string
+	msgToUpdate := newMessagePanel("Message", &msg)
 
 	cmd := NewCmdPanel(
 		"Command",
 		diffFrom.commit,
 		diffOn.commit,
 		diffToUpdate.diff,
+		msgToUpdate.msg,
 	)
 
 	layout := &tui.HorizontalSplit{
@@ -33,8 +38,11 @@ func createApp() (*tui.App, error) {
 			Bottom: &tui.PanelNode{Panel: &diffOn},
 		},
 		Right: &tui.VerticalSplit{
-			Top:    &tui.PanelNode{Panel: &diffToUpdate},
-			Bottom: &tui.PanelNode{Panel: &cmd},
+			Top: &tui.PanelNode{Panel: &diffToUpdate},
+			Bottom: &tui.VerticalSplit{
+				Top:    &tui.PanelNode{Panel: &msgToUpdate},
+				Bottom: &tui.PanelNode{Panel: &cmd},
+			},
 		},
 	}
 	app := tui.NewApp(layout)
