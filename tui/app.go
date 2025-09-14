@@ -82,6 +82,9 @@ func (a *App) Run() {
 	}()
 
 	fmt.Print(HideCursor)
+	for _, panel := range a.panels {
+		panel.Update(InputMessage{})
+	}
 	a.draw()
 
 	for a.running {
@@ -134,15 +137,12 @@ func (a *App) draw() {
 			}
 			maxX = tp.x + tp.w - 1
 		}
-		cursorX := startX + tp.Cursor
-		if cursorX > maxX {
-			cursorX = maxX
-		}
+		cursorX := min(startX+tp.Cursor, maxX)
 		writeAt(cursorX, startY, "")
 	} else {
 		fmt.Print(HideCursor)
 	}
-	fmt.Print(Reset)
+	fmt.Print(reset)
 }
 
 func (a *App) switchPanel() {
