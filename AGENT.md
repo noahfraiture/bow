@@ -22,6 +22,7 @@ Follow idiomatic Go code for the latest release (Go 1.25.1). Use proper naming c
 
 - Run `go test ./...` to execute all tests
 - Build with `go build` to verify compilation
+- Check lint with `golangci-lint run ./...`
 - Never run the executable during testing
 - Ensure tests pass and build succeeds before changes
 

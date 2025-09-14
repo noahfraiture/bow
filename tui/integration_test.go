@@ -63,8 +63,12 @@ func TestCounterPanelIntegration(t *testing.T) {
 	os.Stdin = r
 	defer func() {
 		os.Stdin = oldStdin
-		r.Close()
-		w.Close()
+		if err := r.Close(); err != nil {
+			t.Fatal(err)
+		}
+		if err := w.Close(); err != nil {
+			t.Fatal(err)
+		}
 	}()
 
 	// Create test app
@@ -73,13 +77,17 @@ func TestCounterPanelIntegration(t *testing.T) {
 	// Start the app in goroutine
 	go app.Run()
 
-	w.Write([]byte{'+'})
+	if _, err := w.Write([]byte{'+'}); err != nil {
+		t.Fatal(err)
+	}
 
 	// Wait a bit for processing
 	time.Sleep(10 * time.Millisecond)
 
 	// Send 'q' to quit
-	w.Write([]byte{'q'})
+	if _, err := w.Write([]byte{'q'}); err != nil {
+		t.Fatal(err)
+	}
 
 	// Wait for app to quit
 	time.Sleep(10 * time.Millisecond)
@@ -124,8 +132,12 @@ func TestMultiplePanelsSharedDataIntegration(t *testing.T) {
 	os.Stdin = r
 	defer func() {
 		os.Stdin = oldStdin
-		r.Close()
-		w.Close()
+		if err := r.Close(); err != nil {
+			t.Fatal(err)
+		}
+		if err := w.Close(); err != nil {
+			t.Fatal(err)
+		}
 	}()
 
 	// Create test app
@@ -135,13 +147,17 @@ func TestMultiplePanelsSharedDataIntegration(t *testing.T) {
 	go app.Run()
 
 	// Send '+' to increment shared count
-	w.Write([]byte{'+'})
+	if _, err := w.Write([]byte{'+'}); err != nil {
+		t.Fatal(err)
+	}
 
 	// Wait a bit for processing
 	time.Sleep(10 * time.Millisecond)
 
 	// Send 'q' to quit
-	w.Write([]byte{'q'})
+	if _, err := w.Write([]byte{'q'}); err != nil {
+		t.Fatal(err)
+	}
 
 	// Wait for app to quit
 	time.Sleep(10 * time.Millisecond)

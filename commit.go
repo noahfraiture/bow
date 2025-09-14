@@ -25,11 +25,11 @@ type commitPanel struct {
 	commit *commit
 }
 
-func (c *commitPanel) Draw(_ bool) string {
+func (cp *commitPanel) Draw(_ bool) string {
 	var buffer bytes.Buffer
-	for i, item := range c.Items {
+	for i, item := range cp.Items {
 		selected := ""
-		if c.Selected == i {
+		if cp.Selected == i {
 			selected = colorRed + "*" + colorReset
 		}
 		buffer.WriteString(fmt.Sprintf("%s %s\n", selected, item.String()))
@@ -37,37 +37,43 @@ func (c *commitPanel) Draw(_ bool) string {
 	return buffer.String()
 }
 
-func (c *commitPanel) Update(msg tui.InputMessage) bool {
-	redraw := c.ListPanel.Update(msg)
-	*c.commit = c.Items[c.Selected]
+func (cp *commitPanel) Update(msg tui.InputMessage) bool {
+	redraw := cp.ListPanel.Update(msg)
+	if len(cp.Items) > 0 && cp.Selected >= 0 && cp.Selected < len(cp.Items) {
+		*cp.commit = cp.Items[cp.Selected]
+	}
 	return redraw
 }
 
 func getCommits() ([]commit, error) {
 	dir, err := os.Getwd()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get current working directory: %w", err)
 	}
 
 	repo, err := git.PlainOpen(dir)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open git repository at %s: %w", dir, err)
 	}
 
-	commitsIter, err := repo.CommitObjects()
+	commitsIter, err := repo.Log(&git.LogOptions{Order: git.LogOrderCommitterTime})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get commit log: %w", err)
 	}
 	commits := []commit{}
+	count := 0
 	err = commitsIter.ForEach(func(c *object.Commit) error {
+		if count >= 20 {
+			return nil // Stop after 20 commits
+		}
 		commits = append(commits, commit{c})
+		count++
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to iterate commits: %w", err)
 	}
 	return commits, nil
-
 }
 
 func newCommitPanel(name string, commits []commit) commitPanel {

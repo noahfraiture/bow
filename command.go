@@ -19,11 +19,11 @@ type commandPanel struct {
 	diff *diff
 }
 
-func (c *commandPanel) Update(msg tui.InputMessage) bool {
+func (cp *commandPanel) Update(msg tui.InputMessage) bool {
 	if msg.IsKey(tui.KeyEnter) {
-		panic(fmt.Sprintln(c.from, c.to, c.diff))
+		panic(fmt.Sprintln(cp.from, cp.to, cp.diff))
 	}
-	return c.ListPanel.Update(msg)
+	return cp.ListPanel.Update(msg)
 }
 
 func NewCmdPanel(name string, from, to *commit, diff *diff) commandPanel {

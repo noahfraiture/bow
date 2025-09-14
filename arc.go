@@ -33,9 +33,8 @@ func (s status) String() string {
 	case RequestedChange:
 		return colorRed + "Requested Changes" + colorReset
 	default:
-		panic("color not implemented")
+		panic("Unknown status")
 	}
-
 }
 
 type diff struct {
@@ -53,11 +52,11 @@ type diffPanel struct {
 	diff *diff
 }
 
-func (c *diffPanel) Draw(_ bool) string {
+func (dp *diffPanel) Draw(_ bool) string {
 	var buffer bytes.Buffer
-	for i, item := range c.Items {
+	for i, item := range dp.Items {
 		selected := ""
-		if c.Selected == i {
+		if dp.Selected == i {
 			selected = colorRed + "*" + colorReset
 		}
 		buffer.WriteString(fmt.Sprintf("%s %s\n", selected, item.String()))
@@ -65,13 +64,15 @@ func (c *diffPanel) Draw(_ bool) string {
 	return buffer.String()
 }
 
-func (c *diffPanel) Update(msg tui.InputMessage) bool {
-	redraw := c.ListPanel.Update(msg)
-	*c.diff = c.Items[c.Selected]
+func (dp *diffPanel) Update(msg tui.InputMessage) bool {
+	redraw := dp.ListPanel.Update(msg)
+	if len(dp.Items) > 0 && dp.Selected >= 0 && dp.Selected < len(dp.Items) {
+		*dp.diff = dp.Items[dp.Selected]
+	}
 	return redraw
 }
 
-var diffRe = regexp.MustCompile(`(Needs Review|Draft).+(D\d{5}): (.*)`)
+var diffRe = regexp.MustCompile(`(Needs Review|Draft|Request Changes).+(D\d{5}): (.*)`)
 
 func parseDiff(line string) (diff, bool) {
 	line = strings.TrimSpace(line)
@@ -97,7 +98,7 @@ func getDiffTest() ([]diff, error) {
 		{
 			status:  NeedReview,
 			id:      "D12345",
-			message: "message taht need review",
+			message: "message that needs review",
 		},
 		{
 			status:  Draft,
@@ -107,7 +108,7 @@ func getDiffTest() ([]diff, error) {
 		{
 			status:  RequestedChange,
 			id:      "D07312",
-			message: "you have  to do changes",
+			message: "you have to make changes",
 		},
 	}, nil
 }
@@ -116,7 +117,7 @@ func getDiff() ([]diff, error) {
 	cmd := exec.Command("arc", "list")
 	output, err := cmd.Output()
 	if err != nil {
-		return nil, fmt.Errorf("failed to run arc list: %w", err)
+		return nil, fmt.Errorf("failed to run 'arc list' command: %w", err)
 	}
 	lines := strings.Split(string(output), "\n")
 	var diffs []diff
