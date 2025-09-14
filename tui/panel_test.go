@@ -66,7 +66,7 @@ func TestPanelBaseDraw(t *testing.T) {
 	}
 
 	// Check bottom border
-	expectedBottom = ClrWhite + "└────────┘" + Reset
+	expectedBottom = ClrCyan + "└────────┘" + Reset
 	if lines[4] != expectedBottom {
 		t.Errorf("Bottom line mismatch: got %q, want %q", lines[4], expectedBottom)
 	}
@@ -96,9 +96,10 @@ func TestListPanelDraw(t *testing.T) {
 		Items:     []string{"item1", "item2", "item3"},
 		Selected:  0,
 	}
+	lp.Border = true
 
 	res := lp.Draw(true)
-	full := lp.wrapWithBorder(res, true)
+	full := (&lp.PanelBase).wrapWithBorder(res, true)
 	lines := strings.Split(full, "\n")
 	if len(lines) != 5 {
 		t.Errorf("Expected 5 lines, got %d", len(lines))
@@ -107,13 +108,13 @@ func TestListPanelDraw(t *testing.T) {
 	// Title is handled by app, not in panel Draw
 
 	// Check first item (selected, active)
-	var expectedItem1 = ClrCyan + "│" + Reset + ClrWhite + Reverse + "item1   " + Reset + ClrCyan + "│" + Reset
+	var expectedItem1 = ClrCyan + "│" + Reset + ClrWhite + Reverse + "item1   " + Reset + Reset + ClrCyan + "│" + Reset
 	if lines[1] != expectedItem1 {
 		t.Errorf("Item1 mismatch: got %q, want %q", lines[1], expectedItem1)
 	}
 
 	// Check second item
-	var expectedItem2 = ClrCyan + "│" + Reset + ClrWhite + "item2   " + Reset + ClrCyan + "│" + Reset
+	var expectedItem2 = ClrCyan + "│" + Reset + ClrWhite + "item2   " + Reset + Reset + ClrCyan + "│" + Reset
 	if lines[2] != expectedItem2 {
 		t.Errorf("Item2 mismatch: got %q, want %q", lines[2], expectedItem2)
 	}
@@ -148,9 +149,10 @@ func TestTextPanelDraw(t *testing.T) {
 		Text:      []rune("hello"),
 		Cursor:    2,
 	}
+	tp.Border = true
 
 	res := tp.Draw(true)
-	full := tp.wrapWithBorder(res, true)
+	full := (&tp.PanelBase).wrapWithBorder(res, true)
 	lines := strings.Split(full, "\n")
 	if len(lines) != 4 {
 		t.Errorf("Expected 4 lines, got %d", len(lines))
@@ -177,9 +179,10 @@ func TestInfoPanelDraw(t *testing.T) {
 		PanelBase: PanelBase{w: 10, h: 5, Title: "Info"},
 		Lines:     []string{"line1", "line2", "line3"},
 	}
+	ip.Border = true
 
 	res := ip.Draw(true)
-	full := ip.wrapWithBorder(res, true)
+	full := (&ip.PanelBase).wrapWithBorder(res, true)
 	lines := strings.Split(full, "\n")
 	if len(lines) != 5 {
 		t.Errorf("Expected 5 lines, got %d", len(lines))
