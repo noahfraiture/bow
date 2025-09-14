@@ -1,43 +1,47 @@
 package tui
 
+import "slices"
+
 // KeyType represents the type of key input
 type KeyType int
 
 const (
-	KeyTypeChar KeyType = iota
-	KeyTypeArrow
-	KeyTypeNavigation
-	KeyTypeFunction
-	KeyTypeSpecial
+	_ KeyType = iota
+	KeyTypeChar
+	KeyTypeKey
 )
 
-// Key constants for common keys
+// Key represents special keys
+type Key int
+
 const (
-	KeyUp    = 65
-	KeyDown  = 66
-	KeyRight = 67
-	KeyLeft  = 68
-
-	KeyHome     = 72
-	KeyEnd      = 70
-	KeyPageUp   = 53
-	KeyPageDown = 54
-
-	KeyF1  = 80
-	KeyF2  = 81
-	KeyF3  = 82
-	KeyF4  = 83
-	KeyF5  = 84
-	KeyF6  = 85
-	KeyF7  = 86
-	KeyF8  = 87
-	KeyF9  = 88
-	KeyF10 = 89
-	KeyF11 = 90
-	KeyF12 = 91
-
-	KeyInsert = 50
-	KeyDelete = 51
+	KeyUp        Key = 65 + iota // 65
+	KeyDown                      // 66
+	KeyRight                     // 67
+	KeyLeft                      // 68
+	KeyHome                      // 69
+	KeyEnd                       // 70
+	KeyPageUp                    // 71
+	KeyPageDown                  // 72
+	KeyF1                        // 73
+	KeyF2                        // 74
+	KeyF3                        // 75
+	KeyF4                        // 76
+	KeyF5                        // 77
+	KeyF6                        // 78
+	KeyF7                        // 79
+	KeyF8                        // 80
+	KeyF9                        // 81
+	KeyF10                       // 82
+	KeyF11                       // 83
+	KeyF12                       // 84
+	KeyInsert                    // 85
+	KeyDelete                    // 86
+	KeyTab       Key = 9
+	KeyEnter     Key = 13
+	KeyEsc       Key = 27
+	KeyBackspace Key = 127
+	KeySpace     Key = 32
 )
 
 // Modifier represents keyboard modifiers
@@ -52,75 +56,40 @@ const (
 
 // InputMessage represents a structured input event
 type InputMessage struct {
-	Key       KeyType
-	Code      int  // Key code for special keys
-	Char      rune // Character for printable keys
-	Modifiers []Modifier
-	Raw       []byte // Original raw bytes
+	keyType   KeyType
+	key       Key
+	char      rune
+	modifiers []Modifier
+	raw       []byte
 }
 
-// NewCharMessage creates a new character input message
-func NewCharMessage(char rune, raw []byte) InputMessage {
+func newCharMessage(char rune, raw []byte) InputMessage {
 	return InputMessage{
-		Key:  KeyTypeChar,
-		Char: char,
-		Raw:  raw,
+		keyType: KeyTypeChar,
+		char:    char,
+		raw:     raw,
 	}
 }
 
-// NewArrowMessage creates a new arrow key input message
-func NewArrowMessage(code int, raw []byte) InputMessage {
+func newKeyMessage(key Key, raw []byte) InputMessage {
 	return InputMessage{
-		Key:  KeyTypeArrow,
-		Code: code,
-		Raw:  raw,
-	}
-}
-
-// NewNavigationMessage creates a new navigation key input message
-func NewNavigationMessage(code int, raw []byte) InputMessage {
-	return InputMessage{
-		Key:  KeyTypeNavigation,
-		Code: code,
-		Raw:  raw,
-	}
-}
-
-// NewSpecialMessage creates a new special key input message
-func NewSpecialMessage(code int, raw []byte) InputMessage {
-	return InputMessage{
-		Key:  KeyTypeSpecial,
-		Code: code,
-		Raw:  raw,
+		keyType: KeyTypeKey,
+		key:     key,
+		raw:     raw,
 	}
 }
 
 // IsChar checks if the message is a character key
 func (msg InputMessage) IsChar(char rune) bool {
-	return msg.Key == KeyTypeChar && msg.Char == char
+	return msg.keyType == KeyTypeChar && msg.char == char
 }
 
-// IsArrow checks if the message is an arrow key
-func (msg InputMessage) IsArrow(code int) bool {
-	return msg.Key == KeyTypeArrow && msg.Code == code
-}
-
-// IsNavigation checks if the message is a navigation key
-func (msg InputMessage) IsNavigation(code int) bool {
-	return msg.Key == KeyTypeNavigation && msg.Code == code
-}
-
-// IsSpecial checks if the message is a special key
-func (msg InputMessage) IsSpecial(code int) bool {
-	return msg.Key == KeyTypeSpecial && msg.Code == code
+// IsKey checks if the message is a specific special key
+func (msg InputMessage) IsKey(key Key) bool {
+	return msg.keyType == KeyTypeKey && msg.key == key
 }
 
 // HasModifier checks if the message has a specific modifier
 func (msg InputMessage) HasModifier(mod Modifier) bool {
-	for _, m := range msg.Modifiers {
-		if m == mod {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(msg.modifiers, mod)
 }

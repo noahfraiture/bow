@@ -15,11 +15,3 @@ const (
 	ClrYellow = Esc + "[33m"
 	ClrGreen  = Esc + "[32m"
 )
-
-const (
-	KeyTab       = 9
-	KeyEnter     = 13
-	KeyEsc       = 27
-	KeyBackspace = 127
-	KeySpace     = 32
-)

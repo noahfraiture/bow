@@ -159,7 +159,7 @@ func (a *App) parseInput() (InputMessage, error) {
 	raw := []byte{b}
 
 	// Handle escape sequences
-	if b == KeyEsc {
+	if b == byte(KeyEsc) {
 		next1, err := a.term.reader.ReadByte()
 		if err != nil {
 			return InputMessage{}, err
@@ -175,17 +175,17 @@ func (a *App) parseInput() (InputMessage, error) {
 
 			switch next2 {
 			case 'A':
-				return NewArrowMessage(KeyUp, raw), nil
+				return newKeyMessage(KeyUp, raw), nil
 			case 'B':
-				return NewArrowMessage(KeyDown, raw), nil
+				return newKeyMessage(KeyDown, raw), nil
 			case 'C':
-				return NewArrowMessage(KeyRight, raw), nil
+				return newKeyMessage(KeyRight, raw), nil
 			case 'D':
-				return NewArrowMessage(KeyLeft, raw), nil
+				return newKeyMessage(KeyLeft, raw), nil
 			case 'H':
-				return NewNavigationMessage(KeyHome, raw), nil
+				return newKeyMessage(KeyHome, raw), nil
 			case 'F':
-				return NewNavigationMessage(KeyEnd, raw), nil
+				return newKeyMessage(KeyEnd, raw), nil
 			case '5':
 				tilde, err := a.term.reader.ReadByte()
 				if err != nil {
@@ -193,7 +193,7 @@ func (a *App) parseInput() (InputMessage, error) {
 				}
 				raw = append(raw, tilde)
 				if tilde == '~' {
-					return NewNavigationMessage(KeyPageUp, raw), nil
+					return newKeyMessage(KeyPageUp, raw), nil
 				}
 			case '6':
 				tilde, err := a.term.reader.ReadByte()
@@ -202,7 +202,7 @@ func (a *App) parseInput() (InputMessage, error) {
 				}
 				raw = append(raw, tilde)
 				if tilde == '~' {
-					return NewNavigationMessage(KeyPageDown, raw), nil
+					return newKeyMessage(KeyPageDown, raw), nil
 				}
 			case '2':
 				tilde, err := a.term.reader.ReadByte()
@@ -211,7 +211,7 @@ func (a *App) parseInput() (InputMessage, error) {
 				}
 				raw = append(raw, tilde)
 				if tilde == '~' {
-					return NewSpecialMessage(KeyInsert, raw), nil
+					return newKeyMessage(KeyInsert, raw), nil
 				}
 			case '3':
 				tilde, err := a.term.reader.ReadByte()
@@ -220,62 +220,62 @@ func (a *App) parseInput() (InputMessage, error) {
 				}
 				raw = append(raw, tilde)
 				if tilde == '~' {
-					return NewSpecialMessage(KeyDelete, raw), nil
+					return newKeyMessage(KeyDelete, raw), nil
 				}
 			}
 		} else if next1 >= 'O' && next1 <= 'Z' {
 			// Function keys F1-F4
 			switch next1 {
 			case 'P':
-				return NewSpecialMessage(KeyF1, raw), nil
+				return newKeyMessage(KeyF1, raw), nil
 			case 'Q':
-				return NewSpecialMessage(KeyF2, raw), nil
+				return newKeyMessage(KeyF2, raw), nil
 			case 'R':
-				return NewSpecialMessage(KeyF3, raw), nil
+				return newKeyMessage(KeyF3, raw), nil
 			case 'S':
-				return NewSpecialMessage(KeyF4, raw), nil
+				return newKeyMessage(KeyF4, raw), nil
 			}
 		}
 		// Unknown escape sequence, return as special key
-		return NewSpecialMessage(int(b), raw), nil
+		return newKeyMessage(KeyEsc, raw), nil
 	}
 
 	// Handle special keys
 	switch b {
-	case KeyTab:
-		return NewSpecialMessage(KeyTab, raw), nil
-	case KeyEnter:
-		return NewSpecialMessage(KeyEnter, raw), nil
-	case KeyBackspace:
-		return NewSpecialMessage(KeyBackspace, raw), nil
-	case KeySpace:
-		return NewCharMessage(' ', raw), nil
+	case byte(KeyTab):
+		return newKeyMessage(KeyTab, raw), nil
+	case byte(KeyEnter):
+		return newKeyMessage(KeyEnter, raw), nil
+	case byte(KeyBackspace):
+		return newKeyMessage(KeyBackspace, raw), nil
+	case byte(KeySpace):
+		return newCharMessage(' ', raw), nil
 	case 0x03, 0x04: // Ctrl+C, Ctrl+D
-		msg := NewSpecialMessage(KeyEsc, raw)
-		msg.Modifiers = append(msg.Modifiers, ModCtrl)
+		msg := newKeyMessage(KeyEsc, raw)
+		msg.modifiers = append(msg.modifiers, ModCtrl)
 		return msg, nil
 	}
 
 	// Handle printable characters
 	if b >= 32 && b <= 126 {
-		return NewCharMessage(rune(b), raw), nil
+		return newCharMessage(rune(b), raw), nil
 	}
 
 	// Handle control characters
 	if b < 32 {
-		msg := NewCharMessage(rune(b), raw)
-		msg.Modifiers = append(msg.Modifiers, ModCtrl)
+		msg := newCharMessage(rune(b), raw)
+		msg.modifiers = append(msg.modifiers, ModCtrl)
 		return msg, nil
 	}
 
 	// Default to special key
-	return NewSpecialMessage(int(b), raw), nil
+	return newKeyMessage(KeyEsc, raw), nil
 }
 
 // handleMessage processes an InputMessage
 func (a *App) handleMessage(msg InputMessage) {
 	switch {
-	case msg.IsSpecial(KeyTab):
+	case msg.IsKey(KeyTab):
 		a.switchPanel()
 		return
 	case msg.IsChar('q'), msg.IsChar('Q'):

@@ -29,12 +29,12 @@ type InfoPanel struct {
 // Returns true if the panel needs to be redrawn.
 func (lp *ListPanel) Update(msg InputMessage) bool {
 	switch {
-	case msg.IsChar('k'), msg.IsArrow(KeyUp):
+	case msg.IsChar('k'), msg.IsKey(KeyUp):
 		if lp.Selected > 0 {
 			lp.Selected--
 			return true
 		}
-	case msg.IsChar('j'), msg.IsArrow(KeyDown):
+	case msg.IsChar('j'), msg.IsKey(KeyDown):
 		if lp.Selected < len(lp.Items)-1 {
 			lp.Selected++
 			return true
@@ -66,24 +66,24 @@ func (lp *ListPanel) Draw(active bool) string {
 // Returns true if the panel needs to be redrawn.
 func (tp *TextPanel) Update(msg InputMessage) bool {
 	switch {
-	case msg.IsArrow(KeyLeft):
+	case msg.IsKey(KeyLeft):
 		if tp.Cursor > 0 {
 			tp.Cursor--
 			return true
 		}
-	case msg.IsArrow(KeyRight):
+	case msg.IsKey(KeyRight):
 		if tp.Cursor < len(tp.Text) {
 			tp.Cursor++
 			return true
 		}
-	case msg.IsSpecial(KeyBackspace):
+	case msg.IsKey(KeyBackspace):
 		if tp.Cursor > 0 && len(tp.Text) > 0 {
 			i := tp.Cursor
 			tp.Text = append(tp.Text[:i-1], tp.Text[i:]...)
 			tp.Cursor--
 			return true
 		}
-	case msg.IsSpecial(KeyEnter):
+	case msg.IsKey(KeyEnter):
 		tp.Text = []rune{}
 		tp.Cursor = 0
 		return true
@@ -100,13 +100,13 @@ func (tp *TextPanel) Update(msg InputMessage) bool {
 		tp.Cursor++
 		return true
 	default:
-		if msg.Key == KeyTypeChar && msg.Char >= 32 && msg.Char <= 126 {
+		if msg.keyType == KeyTypeChar && msg.char >= 32 && msg.char <= 126 {
 			i := tp.Cursor
 			before := tp.Text[:i]
 			after := tp.Text[i:]
 			newText := make([]rune, 0, len(before)+1+len(after))
 			newText = append(newText, before...)
-			newText = append(newText, msg.Char)
+			newText = append(newText, msg.char)
 			newText = append(newText, after...)
 			tp.Text = newText
 			tp.Cursor++
