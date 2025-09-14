@@ -52,7 +52,7 @@ func (pb *PanelBase) Draw(active bool) string {
 }
 
 func (pb *PanelBase) wrapWithBorder(content string, active bool) string {
-	if pb.w < 2 || pb.h < 2 {
+	if pb.w <= 2 || pb.h <= 2 {
 		return ""
 	}
 
