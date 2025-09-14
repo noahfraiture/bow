@@ -7,7 +7,7 @@ import (
 
 // ListPanel is a panel that displays a list of items with selection.
 // Embed PanelBase for positioning and borders. Override Draw to customize appearance.
-type ListPanel[T fmt.Stringer] struct {
+type ListPanel[T any] struct {
 	PanelBase
 	Items    []T
 	Selected int
@@ -59,7 +59,7 @@ func (lp *ListPanel[T]) Draw(active bool) string {
 				color = ClrYellow
 			}
 		}
-		lines = append(lines, color+item.String()+Reset)
+		lines = append(lines, fmt.Sprintf("%s%s%s", color, item, Reset))
 	}
 	return strings.Join(lines, "\n")
 }

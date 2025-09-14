@@ -9,23 +9,36 @@ func truncateToWidth(s string, w int) string {
 	if displayWidth(s) <= w {
 		return s
 	}
-	stripped := stripANSI(s)
-	r := []rune(stripped)
-	var truncatedStripped string
-	if len(r) <= w {
-		truncatedStripped = stripped
-	} else if w <= 2 {
-		truncatedStripped = string(r[:w])
-	} else {
-		truncatedStripped = string(r[:w-2]) + ".."
+	var result strings.Builder
+	visible := 0
+	inEscape := false
+	truncated := false
+	for _, r := range s {
+		if r == '\x1b' {
+			inEscape = true
+			result.WriteRune(r)
+		} else if inEscape {
+			result.WriteRune(r)
+			if r == 'm' {
+				inEscape = false
+			}
+		} else {
+			if !truncated {
+				if visible < w {
+					result.WriteRune(r)
+					visible++
+					if visible == w-2 && w > 2 {
+						result.WriteString("..")
+						truncated = true
+						visible += 2
+					}
+				} else {
+					truncated = true
+				}
+			}
+		}
 	}
-	// Re-add colors if present
-	if strings.HasPrefix(s, "\x1b[7m") && strings.HasSuffix(s, "\x1b[0m") {
-		return "\x1b[7m" + truncatedStripped + "\x1b[0m"
-	} else if strings.HasPrefix(s, "\x1b[33m") && strings.HasSuffix(s, "\x1b[0m") {
-		return "\x1b[33m" + truncatedStripped + "\x1b[0m"
-	}
-	return truncatedStripped
+	return result.String()
 }
 
 func padRightRuneString(s string, w int) string {

@@ -148,7 +148,7 @@ func TestPanelBaseDraw(t *testing.T) {
 
 func TestListPanelDraw(t *testing.T) {
 	t.Run("with_border", func(t *testing.T) {
-		lp := &ListPanel{
+		lp := &ListPanel[string]{
 			PanelBase: PanelBase{w: 10, h: 5, Title: "List"},
 			Items:     []string{"item1", "item2", "item3"},
 			Selected:  0,
