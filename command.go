@@ -53,7 +53,7 @@ func NewCmdPanel(name string, from, on *commit, diff *diff, msg *string) command
 }
 
 func (cp *commandPanel) runCmd() error {
-	patch, err := cp.from.Patch(cp.on.Commit)
+	patch, err := cp.on.Patch(cp.from.Commit)
 	if err != nil {
 		return fmt.Errorf("failed to get patch from commits")
 	}
