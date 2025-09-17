@@ -18,14 +18,17 @@ type DefaultGlobalHandler struct{}
 // Returns (false, false) for unhandled input.
 func (dgh *DefaultGlobalHandler) UpdateGlobal(app *App, msg InputMessage) (handled bool, redraw bool) {
 	switch {
+	case msg.HasModifier(ModShift) && msg.IsKey(KeyTab):
+		app.SwitchPanel(-1)
+		return true, true
 	case msg.IsKey(KeyTab):
 		app.SwitchPanel(1)
-		return true, true // Switch panel, redraw
+		return true, true
 	case msg.IsChar('q'), msg.IsChar('Q'), msg.IsChar('\x03'): // 'q' or Ctrl+C
 		app.Stop()
 		return true, false // Quit, no redraw
 	}
-	return false, false // Not handled
+	return false, false
 }
 
 // OnPanelSwitch is a no-op hook for panel switches.

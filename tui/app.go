@@ -226,61 +226,78 @@ func (a *App) parseInput() (InputMessage, error) {
 		raw = append(raw, next1)
 
 		if next1 == '[' {
-			next2, err := a.term.reader.ReadByte()
-			if err != nil {
-				return InputMessage{}, err
+			var buf []byte
+			var final byte
+			for {
+				b, err := a.term.reader.ReadByte()
+				if err != nil {
+					return InputMessage{}, err
+				}
+				raw = append(raw, b)
+				if (b >= 'A' && b <= 'Z') || b == '~' {
+					final = b
+					break
+				}
+				buf = append(buf, b)
 			}
-			raw = append(raw, next2)
-
-			switch next2 {
-			case 'A':
-				return newKeyMessage(KeyUp, raw), nil
-			case 'B':
-				return newKeyMessage(KeyDown, raw), nil
-			case 'C':
-				return newKeyMessage(KeyRight, raw), nil
-			case 'D':
-				return newKeyMessage(KeyLeft, raw), nil
-			case 'H':
-				return newKeyMessage(KeyHome, raw), nil
-			case 'F':
-				return newKeyMessage(KeyEnd, raw), nil
-			case '5':
-				tilde, err := a.term.reader.ReadByte()
-				if err != nil {
-					return InputMessage{}, err
+			params := strings.Split(string(buf), ";")
+			var key Key
+			var modifiers []Modifier
+			if len(params) > 1 {
+				modStr := params[len(params)-1]
+				modCode, _ := strconv.Atoi(modStr)
+				if modCode&1 != 0 {
+					modifiers = append(modifiers, ModShift)
 				}
-				raw = append(raw, tilde)
-				if tilde == '~' {
-					return newKeyMessage(KeyPageUp, raw), nil
+				if modCode&2 != 0 {
+					modifiers = append(modifiers, ModAlt)
 				}
-			case '6':
-				tilde, err := a.term.reader.ReadByte()
-				if err != nil {
-					return InputMessage{}, err
+				if modCode&4 != 0 {
+					modifiers = append(modifiers, ModCtrl)
 				}
-				raw = append(raw, tilde)
-				if tilde == '~' {
-					return newKeyMessage(KeyPageDown, raw), nil
+				params = params[:len(params)-1]
+			}
+			if final == '~' {
+				if len(params) > 0 {
+					keyCode, _ := strconv.Atoi(params[0])
+					switch keyCode {
+					case 1:
+						key = KeyHome
+					case 2:
+						key = KeyInsert
+					case 3:
+						key = KeyDelete
+					case 4:
+						key = KeyEnd
+					case 5:
+						key = KeyPageUp
+					case 6:
+						key = KeyPageDown
+					case 9:
+						key = KeyTab
+					}
 				}
-			case '2':
-				tilde, err := a.term.reader.ReadByte()
-				if err != nil {
-					return InputMessage{}, err
+			} else {
+				switch final {
+				case 'A':
+					key = KeyUp
+				case 'B':
+					key = KeyDown
+				case 'C':
+					key = KeyRight
+				case 'D':
+					key = KeyLeft
+				case 'H':
+					key = KeyHome
+				case 'F':
+					key = KeyEnd
+				case 'Z':
+					key = KeyTab
+					modifiers = append(modifiers, ModShift)
 				}
-				raw = append(raw, tilde)
-				if tilde == '~' {
-					return newKeyMessage(KeyInsert, raw), nil
-				}
-			case '3':
-				tilde, err := a.term.reader.ReadByte()
-				if err != nil {
-					return InputMessage{}, err
-				}
-				raw = append(raw, tilde)
-				if tilde == '~' {
-					return newKeyMessage(KeyDelete, raw), nil
-				}
+			}
+			if key != 0 {
+				return newKeyMessageWithModifiers(key, raw, modifiers), nil
 			}
 		} else if next1 >= 'O' && next1 <= 'Z' {
 			// Function keys F1-F4

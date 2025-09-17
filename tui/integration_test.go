@@ -390,3 +390,53 @@ func TestSharedPointersIntegration(t *testing.T) {
 		t.Errorf("Expected sharedB to remain at first item, got %v", sharedB)
 	}
 }
+
+type testHandler struct {
+	*DefaultGlobalHandler
+}
+
+func (th *testHandler) UpdateGlobal(app *App, msg InputMessage) (handled bool, redraw bool) {
+	switch {
+	case msg.HasModifier(ModShift) && msg.IsKey(KeyTab):
+		app.SwitchPanel(-1) // Cycle backward
+		return true, true
+	default:
+		return th.DefaultGlobalHandler.UpdateGlobal(app, msg)
+	}
+}
+
+func TestShiftTabHandler(t *testing.T) {
+	// Create a layout with 3 panels
+	layout := &HorizontalSplit{
+		Left: &PanelNode{Panel: &PanelBase{}},
+		Right: &HorizontalSplit{
+			Left:  &PanelNode{Panel: &PanelBase{}},
+			Right: &PanelNode{Panel: &PanelBase{}},
+		},
+	}
+	app := NewApp(layout, nil)
+	app.activeIdx = 1
+	h := &testHandler{
+		DefaultGlobalHandler: &DefaultGlobalHandler{},
+	}
+
+	// Test Shift+Tab cycles backward
+	msg := newKeyMessageWithModifiers(KeyTab, []byte{}, []Modifier{ModShift})
+	handled, redraw := h.UpdateGlobal(app, msg)
+	if !handled || !redraw {
+		t.Errorf("Shift+Tab should be handled and redraw")
+	}
+	if app.activeIdx != 0 { // Should cycle to 0
+		t.Errorf("Active index should be 0 after Shift+Tab, got %d", app.activeIdx)
+	}
+
+	// Test again to cycle from 0 to 2 (wrap around)
+	app.activeIdx = 0
+	handled, redraw = h.UpdateGlobal(app, msg)
+	if !handled || !redraw {
+		t.Errorf("Shift+Tab should be handled and redraw")
+	}
+	if app.activeIdx != 2 { // Should cycle to 2
+		t.Errorf("Active index should be 2 after Shift+Tab from 0, got %d", app.activeIdx)
+	}
+}

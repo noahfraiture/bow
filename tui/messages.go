@@ -79,6 +79,15 @@ func newKeyMessage(key Key, raw []byte) InputMessage {
 	}
 }
 
+func newKeyMessageWithModifiers(key Key, raw []byte, mods []Modifier) InputMessage {
+	return InputMessage{
+		keyType:   KeyTypeKey,
+		key:       key,
+		modifiers: mods,
+		raw:       raw,
+	}
+}
+
 // IsChar checks if the message is a character key
 func (msg InputMessage) IsChar(char rune) bool {
 	return msg.keyType == KeyTypeChar && msg.char == char
