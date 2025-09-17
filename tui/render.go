@@ -123,6 +123,7 @@ func (a *App) draw() {
 	}
 
 	buffer := newDrawBuffer(a)
+	a.layoutPanels(a.layout)
 	a.drawPanelsBuffered(buffer)
 	a.drawStatusBarBuffered(buffer)
 	a.drawCursorBuffered(buffer)
