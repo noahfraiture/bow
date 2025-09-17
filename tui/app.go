@@ -15,14 +15,15 @@ import (
 // App manages the terminal user interface, handling panel layout, input, and rendering.
 // It runs the main event loop, positions panels, and redraws the screen.
 type App struct {
-	term      *terminal
-	panels    []Panel
-	layout    Layout
-	activeIdx int
-	running   bool
-	sigch     chan os.Signal
-	handler   GlobalHandler
-	noDraw    bool // For testing: skip drawing
+	term        *terminal
+	panels      []Panel
+	layout      Layout
+	activeIdx   int
+	running     bool
+	sigch       chan os.Signal
+	handler     GlobalHandler
+	noDraw      bool     // For testing: skip drawing
+	previousOps []drawOp // Previous frame operations for double buffering
 }
 
 // NewApp creates a new App instance with the given layout and global handler.

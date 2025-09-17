@@ -6,7 +6,8 @@ import (
 )
 
 type drawBuffer struct {
-	operations []drawOp
+	operations  []drawOp
+	previousOps []drawOp
 }
 
 type drawOp struct {
@@ -14,10 +15,10 @@ type drawOp struct {
 	content string
 }
 
-// newDrawBuffer creates a new drawing buffer
-func newDrawBuffer() *drawBuffer {
+func newDrawBuffer(app *App) *drawBuffer {
 	return &drawBuffer{
-		operations: make([]drawOp, 0, 100), // Pre-allocate reasonable capacity
+		operations:  make([]drawOp, 0, 100),
+		previousOps: app.previousOps,
 	}
 }
 
@@ -25,15 +26,51 @@ func (db *drawBuffer) writeAt(x, y int, content string) {
 	db.operations = append(db.operations, drawOp{x: x, y: y, content: content})
 }
 
-// flush executes all buffered drawing operations
 func (db *drawBuffer) flush() {
-	for _, op := range db.operations {
+	changedOps := db.findChangedOperations()
+	for _, op := range changedOps {
 		writeAt(op.x, op.y, op.content)
 	}
-	db.operations = db.operations[:0] // Clear buffer efficiently
+	db.updatePreviousState()
 }
 
-// drawPanelsBuffered collects all panel drawing operations
+func (db *drawBuffer) findChangedOperations() []drawOp {
+	changedOps := make([]drawOp, 0, len(db.operations))
+
+	prevMap := make(map[string]drawOp)
+	for _, op := range db.previousOps {
+		key := db.makeKey(op.x, op.y)
+		prevMap[key] = op
+	}
+
+	for _, currOp := range db.operations {
+		key := db.makeKey(currOp.x, currOp.y)
+		if prevOp, exists := prevMap[key]; !exists || prevOp.content != currOp.content {
+			changedOps = append(changedOps, currOp)
+		}
+		delete(prevMap, key)
+	}
+
+	for _, oldOp := range prevMap {
+		changedOps = append(changedOps, drawOp{
+			x:       oldOp.x,
+			y:       oldOp.y,
+			content: "",
+		})
+	}
+	return changedOps
+}
+
+func (db *drawBuffer) updatePreviousState() {
+	db.previousOps = db.previousOps[:0]
+	db.previousOps = append(db.previousOps, db.operations...)
+	db.operations = db.operations[:0]
+}
+
+func (db *drawBuffer) makeKey(x, y int) string {
+	return fmt.Sprintf("%d,%d", x, y)
+}
+
 func (a *App) drawPanelsBuffered(buffer *drawBuffer) {
 	for i, p := range a.panels {
 		active := i == a.activeIdx
@@ -41,7 +78,6 @@ func (a *App) drawPanelsBuffered(buffer *drawBuffer) {
 	}
 }
 
-// drawPanelBuffered collects drawing operations for a single panel
 func (a *App) drawPanelBuffered(p Panel, active bool, buffer *drawBuffer) {
 	content := p.Draw(active)
 	if content == "" {
@@ -60,20 +96,18 @@ func (a *App) drawPanelBuffered(p Panel, active bool, buffer *drawBuffer) {
 	}
 }
 
-// drawStatusBarBuffered collects status bar drawing operations
 func (a *App) drawStatusBarBuffered(buffer *drawBuffer) {
 	status := a.handler.GetStatus()
 	buffer.writeAt(0, a.term.rows-1, padRightRuneString(status, a.term.cols))
 }
 
-// drawCursorBuffered collects cursor positioning operations
 func (a *App) drawCursorBuffered(buffer *drawBuffer) {
 	if a.activeIdx >= len(a.panels) {
 		fmt.Print(HideCursor)
 		return
 	}
 	p := a.panels[a.activeIdx]
-	active := true // since it's the active panel
+	active := true
 	x, y, show := p.CursorPosition(active)
 	if show {
 		fmt.Print(ShowCursor)
@@ -83,20 +117,20 @@ func (a *App) drawCursorBuffered(buffer *drawBuffer) {
 	}
 }
 
-// draw performs atomic screen updates using buffered rendering
 func (a *App) draw() {
 	if a.noDraw {
 		return
 	}
 
-	// Create buffer and collect all drawing operations
-	buffer := newDrawBuffer()
+	buffer := newDrawBuffer(a)
 	a.drawPanelsBuffered(buffer)
 	a.drawStatusBarBuffered(buffer)
 	a.drawCursorBuffered(buffer)
 
-	// Atomic update: clear screen and flush all operations at once
-	clearScreen()
+	if len(a.previousOps) == 0 {
+		clearScreen()
+	}
 	buffer.flush()
+	a.previousOps = buffer.previousOps
 	fmt.Print(reset)
 }
