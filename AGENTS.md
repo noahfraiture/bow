@@ -8,15 +8,16 @@ Written in Go, it includes a custom TUI library in `tui/` for building terminal 
 
 ## High-Level Architecture
 
-- **Main Application**: Entry point in `main.go` sets up panels for commit selection, diff management, and commands. Uses the TUI library for UI rendering and input handling.
-- **TUI Library (`tui/`)**: Custom framework for terminal UIs. Core components include app management, panel interfaces, layout systems, and low-level terminal operations. Supports generics for reusable panels like lists and text inputs.
-- **Integration Modules**: Separate modules for Git commits (`commit.go`), Arcanist diffs (`arc.go`), and command execution (`command.go`). Handle external tool interactions and data parsing.
+- **Main Application**: Entry point in `main.go` sets up panels for commit selection, diff management, messages, and commands. Uses the TUI library for UI rendering and input handling. Includes a custom global handler in `handler.go` for command switching.
+- **TUI Library (`tui/`)**: Custom framework for terminal UIs. Core components include app management, panel interfaces, layout systems, and low-level terminal operations. Supports generics for reusable panels like lists and text inputs. Includes builtin panels such as ListPanel[T], TextPanel, and InfoPanel.
+- **Integration Modules**: Separate modules for Git commits (`commit.go`), Arcanist diffs (`arc.go`), command execution (`command.go`), and message panels (`message.go`). Handle external tool interactions and data parsing.
 
 ## Key Concepts
 
 - **Panel Pattern**: UI components implement the `Panel` interface with `Update()` for input handling and `Draw()` for rendering. Embed `PanelBase` for shared properties.
 - **Layout System**: Dynamic arrangement of panels using splits (horizontal/vertical) and nodes.
 - **Input Handling**: Structured messages for keyboard input, enabling key detection and character processing.
+- **Builtin Panels**: Pre-built components like ListPanel[T] for selectable lists, TextPanel for input, and InfoPanel for display.
 - **Modularity**: Code organized into focused modules; avoid global state by passing dependencies explicitly.
 - **Error Handling**: Standard Go practices with error wrapping and fatal logging in main.
 
@@ -42,7 +43,7 @@ Written in Go, it includes a custom TUI library in `tui/` for building terminal 
 - **Development Workflow**: Test and build after changes. Run `go test ./...`, `go build`, and `golangci-lint run ./...`. Ensure tests pass before completion.
 - **Panel Implementation**: Follow `Panel` interface; embed `PanelBase`; use generics for lists.
 - **Layout Usage**: Arrange panels with splits and nodes.
-- **Integration**: Use `go-git` for commits, parse `arc list` output for diffs.
+- **Integration**: Use `go-git` for commits, parse `arc list` output for diffs, and execute `arc diff` commands.
 - **Input/Rendering**: Handle via `InputMessage`; redraw when `Update()` returns true; use ANSI codes.
 - **Error Handling**: Wrap errors with `%w`; fatal logs in main.
 - **Code Style**: Match existing patterns; modular, no comments.
