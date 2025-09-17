@@ -143,7 +143,6 @@ func (a *App) Stop() {
 	a.running = false
 }
 
-// callOnPanelSwitch is a helper to call OnPanelSwitch with the current panel name.
 func (a *App) callOnPanelSwitch() {
 	panelName := a.panels[a.activeIdx].GetBase().Title
 	if panelName == "" {
@@ -152,7 +151,6 @@ func (a *App) callOnPanelSwitch() {
 	a.handler.OnPanelSwitch(a, panelName)
 }
 
-// handleMessage processes an InputMessage
 func (a *App) handleMessage(msg InputMessage) {
 	if a.activeIdx < len(a.panels) {
 		handled, redraw := a.panels[a.activeIdx].Update(msg)
@@ -170,7 +168,6 @@ func (a *App) handleMessage(msg InputMessage) {
 	}
 }
 
-// padRightRuneString pads s with spaces to width w, truncating if longer.
 func padRightRuneString(s string, w int) string {
 	r := []rune(s)
 	if len(r) >= w {
