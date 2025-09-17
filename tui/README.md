@@ -49,7 +49,7 @@ func main() {
     layout := &tui.PanelNode{Panel: info}
 
     // Create and run the app
-    app := tui.NewApp(layout)
+    app := tui.NewApp(layout, nil)
     app.Run()
 }
 ```
@@ -215,12 +215,55 @@ layout := &tui.VerticalSplit{
 }
 ```
 
-## Running the App
+## Global Handlers
 
-Create an `App` instance with your layout and call `Run()`:
+Global handlers allow you to customize global input handling and panel switching behavior. Implement the `GlobalHandler` interface or embed `DefaultGlobalHandler` for default behavior.
+
+### GlobalHandler Interface
 
 ```go
-app := tui.NewApp(layout)
+type GlobalHandler interface {
+    UpdateGlobal(app *App, msg InputMessage) (handled bool, redraw bool)
+    OnPanelSwitch(app *App, panelName string)
+    GetStatus() string
+}
+```
+
+- `UpdateGlobal`: Handles global input like Tab for panel switching and quit commands.
+- `OnPanelSwitch`: Called when switching panels (hook for additional logic).
+- `GetStatus`: Returns the status line displayed at the bottom.
+
+### DefaultGlobalHandler
+
+Provides default global commands:
+
+- `Tab`: Switch to the next panel.
+- `q` / `Q` / `Ctrl-C`: Quit the application.
+
+```go
+type MyHandler struct {
+    tui.DefaultGlobalHandler
+}
+
+func (h *MyHandler) GetStatus() string {
+    return "Custom status: " + time.Now().Format("15:04:05")
+}
+```
+
+## Running the App
+
+Create an `App` instance with your layout and optional global handler, then call `Run()`:
+
+```go
+app := tui.NewApp(layout, nil) // Use default handler
+app.Run()
+```
+
+Or with a custom handler:
+
+```go
+handler := &MyHandler{}
+app := tui.NewApp(layout, handler)
 app.Run()
 ```
 
@@ -267,6 +310,8 @@ The status bar at the bottom shows available actions.
 - `PanelBase`: Base struct providing common panel functionality.
 - `App`: Main application struct.
 - `InputMessage`: Represents user input events.
+- `GlobalHandler`: Interface for global input and panel switching handling.
+- `DefaultGlobalHandler`: Default implementation of global handler.
 - `ListPanel[T]`: Generic selectable list panel.
 - `TextPanel`: Text input panel.
 - `InfoPanel`: Static information display panel.
@@ -276,7 +321,7 @@ The status bar at the bottom shows available actions.
 
 ### Key Functions
 
-- `NewApp(layout layout) *App`: Creates a new app instance.
+- `NewApp(layout Layout, handler GlobalHandler) *App`: Creates a new app instance with layout and optional global handler (pass nil for default).
 - `(*App) Run()`: Starts the main event loop.
 
 For detailed method signatures and more examples, run `go doc bow/tui` or refer to the source code.

@@ -6,46 +6,56 @@ import (
 	"log"
 )
 
+type panels struct {
+	diffFrom  commitPanel
+	diffOn    commitPanel
+	diffs     diffPanel
+	updateMsg messagePanel
+	createMsg messagePanel
+}
+
 func createApp() (*tui.App, error) {
+
 	commits, err := getCommits()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create app: %w", err)
 	}
-	diffFrom := newCommitPanel("Diff from", commits)
-	diffOn := newCommitPanel("Diff on", commits)
-	diffOn.Selected = 1
-
 	diffs, err := getDiff()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create app: %w", err)
 	}
-	diffToUpdate := newDiffPanel("Diff to update", diffs)
 
-	var msg string
-	msgToUpdate := newMessagePanel("Message", &msg)
+	panels := panels{
+		diffFrom:  newCommitPanel("Diff from", commits),
+		diffOn:    newCommitPanel("Diff from", commits),
+		diffs:     newDiffPanel("Diff to update", diffs),
+		updateMsg: newMessagePanel("Message"),
+		createMsg: newMessagePanel("Message"),
+	}
 
-	cmd := NewCmdPanel(
-		"Command",
-		diffFrom.commit,
-		diffOn.commit,
-		diffToUpdate.diff,
-		msgToUpdate.msg,
-	)
-
-	layout := &tui.HorizontalSplit{
+	defaultLayout := &tui.HorizontalSplit{
 		Left: &tui.VerticalSplit{
-			Top:    &tui.PanelNode{Panel: &diffFrom},
-			Bottom: &tui.PanelNode{Panel: &diffOn},
+			Top:    &tui.PanelNode{Panel: &panels.diffFrom},
+			Bottom: &tui.PanelNode{Panel: &panels.diffOn},
 		},
 		Right: &tui.VerticalSplit{
-			Top: &tui.PanelNode{Panel: &diffToUpdate},
-			Bottom: &tui.VerticalSplit{
-				Top:    &tui.PanelNode{Panel: &msgToUpdate},
-				Bottom: &tui.PanelNode{Panel: &cmd},
-			},
+			Top:    &tui.PanelNode{Panel: &panels.diffs},
+			Bottom: &tui.PanelNode{Panel: &panels.updateMsg},
 		},
 	}
-	app := tui.NewApp(layout)
+
+	handler := &handler{
+		diffFromCommit: panels.diffFrom.commit,
+		diffOnCommit:   panels.diffOn.commit,
+		diffToUpdate:   panels.diffs.diff,
+		updateMsg:      panels.updateMsg.msg,
+		createMsg:      panels.createMsg.msg,
+		panels:         panels,
+		activeCommand:  Update,
+		rightPanel:     &defaultLayout.Right,
+	}
+
+	app := tui.NewApp(defaultLayout, handler)
 
 	return app, nil
 }

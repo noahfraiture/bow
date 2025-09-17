@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"slices"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -16,15 +17,21 @@ import (
 type App struct {
 	term      *terminal
 	panels    []Panel
-	layout    layout
+	layout    Layout
 	activeIdx int
 	running   bool
 	sigch     chan os.Signal
+	handler   GlobalHandler
+	noDraw    bool // For testing: skip drawing
 }
 
-// NewApp creates a new App instance with the given layout.
+// NewApp creates a new App instance with the given layout and global handler.
+// If handler is nil, uses DefaultGlobalHandler.
 // Initializes terminal settings and positions panels.
-func NewApp(layout layout) *App {
+func NewApp(layout Layout, handler GlobalHandler) *App {
+	if handler == nil {
+		handler = &DefaultGlobalHandler{}
+	}
 	cols, rows, err := getTermSize()
 	if err != nil {
 		cols, rows = 80, 24
@@ -38,14 +45,17 @@ func NewApp(layout layout) *App {
 		term:    term,
 		layout:  layout,
 		running: true,
+		handler: handler,
 	}
 	app.layoutPanels(layout)
 	return app
 }
 
-func (a *App) layoutPanels(layout layout) {
+func (a *App) layoutPanels(layout Layout) {
 	a.panels = layout.position(0, 0, a.term.cols, a.term.rows-1)
-	a.activeIdx = 0
+	if a.activeIdx > len(a.panels) {
+		a.activeIdx = len(a.panels) - 1
+	}
 }
 
 // Run starts the application's main loop, handling input and rendering until quit.
@@ -105,6 +115,10 @@ func (a *App) Run() {
 }
 
 func (a *App) draw() {
+	if a.noDraw {
+		return
+	}
+	a.layoutPanels(a.layout)
 	clearScreen()
 	for i, p := range a.panels {
 		active := i == a.activeIdx
@@ -124,7 +138,7 @@ func (a *App) draw() {
 			writeAt(p.GetBase().x, p.GetBase().y+j, line)
 		}
 	}
-	status := " Tab: switch  •  ↑/↓: navigate  •  ←/→: move cursor  •  Enter: confirm  •  q/Ctrl-C: quit "
+	status := a.handler.GetStatus()
 	writeAt(0, a.term.rows-1, padRightRuneString(status, a.term.cols))
 
 	if tp, ok := a.panels[a.activeIdx].(*TextPanel); ok && a.activeIdx < len(a.panels) {
@@ -151,8 +165,41 @@ func (a *App) draw() {
 	fmt.Print(reset)
 }
 
-func (a *App) switchPanel() {
-	a.activeIdx = (a.activeIdx + 1) % len(a.panels)
+// SwitchPanel switches to the next or previous panel based on direction.
+// direction > 0: next, < 0: previous, 0: no change.
+func (a *App) SwitchPanel(direction int) {
+	if direction == 0 {
+		return
+	}
+	a.activeIdx = (a.activeIdx + direction + len(a.panels)) % len(a.panels)
+	a.callOnPanelSwitch()
+}
+
+// FocusPanel focuses the panel with the given name (Title or index string).
+// Returns true if found and focused.
+func (a *App) FocusPanel(name string) bool {
+	for i, panel := range a.panels {
+		if panel.GetBase().Title == name || strconv.Itoa(i) == name {
+			a.activeIdx = i
+			a.callOnPanelSwitch()
+			return true
+		}
+	}
+	return false
+}
+
+// Stop stops the application by setting running to false.
+func (a *App) Stop() {
+	a.running = false
+}
+
+// callOnPanelSwitch is a helper to call OnPanelSwitch with the current panel name.
+func (a *App) callOnPanelSwitch() {
+	panelName := a.panels[a.activeIdx].GetBase().Title
+	if panelName == "" {
+		panelName = strconv.Itoa(a.activeIdx)
+	}
+	a.handler.OnPanelSwitch(a, panelName)
 }
 
 // parseInput reads and parses input into an InputMessage
@@ -276,15 +323,11 @@ func (a *App) parseInput() (InputMessage, error) {
 
 // handleMessage processes an InputMessage
 func (a *App) handleMessage(msg InputMessage) {
-	switch {
-	case msg.IsKey(KeyTab):
-		a.switchPanel()
-		return
-	case msg.IsChar('q'), msg.IsChar('Q'):
-		a.running = false
-		return
-	case msg.IsChar('\x03'): // Ctrl+C
-		a.running = false
+	handled, redraw := a.handler.UpdateGlobal(a, msg)
+	if handled {
+		if redraw {
+			a.draw()
+		}
 		return
 	}
 

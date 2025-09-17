@@ -63,10 +63,11 @@ func (dp *dummyPanel) Draw(active bool) string {
 }
 
 // newTestApp creates a new App instance for testing with pipe input.
-func newTestApp(layout layout) *App {
-	app := NewApp(layout)
+func newTestApp(layout Layout) *App {
+	app := NewApp(layout, nil)
 	app.term.cols = 80
 	app.term.rows = 24
+	app.noDraw = true // Disable drawing for tests
 	return app
 }
 
@@ -100,8 +101,14 @@ func TestCounterPanelIntegration(t *testing.T) {
 	// Create test app
 	app := newTestApp(layout)
 
+	// Channel to signal app has stopped
+	done := make(chan bool)
+
 	// Start the app in goroutine
-	go app.Run()
+	go func() {
+		app.Run()
+		done <- true
+	}()
 
 	if _, err := w.Write([]byte{'+'}); err != nil {
 		t.Fatal(err)
@@ -116,7 +123,12 @@ func TestCounterPanelIntegration(t *testing.T) {
 	}
 
 	// Wait for app to quit
-	time.Sleep(10 * time.Millisecond)
+	select {
+	case <-done:
+		// App has stopped
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("App did not stop within timeout")
+	}
 
 	// Check if count increased
 	if len(app.panels) != 1 {
@@ -129,6 +141,82 @@ func TestCounterPanelIntegration(t *testing.T) {
 		}
 	} else {
 		t.Errorf("Expected CounterPanel, got %T", app.panels[0])
+	}
+}
+
+func TestGlobalHandlerIntegration(t *testing.T) {
+	// Test that global handler handles Tab and quit correctly
+	app := &App{
+		panels:    []Panel{&PanelBase{}},
+		activeIdx: 0,
+		running:   true,
+		handler:   &DefaultGlobalHandler{},
+	}
+
+	// Test Tab
+	handled, redraw := app.handler.UpdateGlobal(app, newKeyMessage(KeyTab, []byte{}))
+	if !handled || !redraw {
+		t.Errorf("Tab should be handled and redraw")
+	}
+	if app.activeIdx != 0 { // Only one panel, should stay 0
+		t.Errorf("Active index should be 0, got %d", app.activeIdx)
+	}
+
+	// Test quit
+	handled, redraw = app.handler.UpdateGlobal(app, newCharMessage('q', []byte{}))
+	if !handled || redraw {
+		t.Errorf("Quit should be handled and not redraw")
+	}
+	if app.running {
+		t.Errorf("App should not be running after quit")
+	}
+}
+
+func TestAppPublicMethods(t *testing.T) {
+	// Create panels
+	p1 := &PanelBase{Title: "Panel1"}
+	p2 := &PanelBase{Title: "Panel2"}
+	app := &App{
+		panels:    []Panel{p1, p2},
+		activeIdx: 0,
+		running:   true,
+		handler:   &DefaultGlobalHandler{},
+	}
+
+	// Test SwitchPanel
+	app.SwitchPanel(1)
+	if app.activeIdx != 1 {
+		t.Errorf("Expected activeIdx 1, got %d", app.activeIdx)
+	}
+
+	app.SwitchPanel(-1)
+	if app.activeIdx != 0 {
+		t.Errorf("Expected activeIdx 0, got %d", app.activeIdx)
+	}
+
+	// Test FocusPanel
+	if !app.FocusPanel("Panel2") {
+		t.Errorf("FocusPanel should succeed for Panel2")
+	}
+	if app.activeIdx != 1 {
+		t.Errorf("Expected activeIdx 1, got %d", app.activeIdx)
+	}
+
+	if !app.FocusPanel("1") { // By index
+		t.Errorf("FocusPanel should succeed for index 1")
+	}
+	if app.activeIdx != 1 {
+		t.Errorf("Expected activeIdx 1, got %d", app.activeIdx)
+	}
+
+	if app.FocusPanel("NonExistent") {
+		t.Errorf("FocusPanel should fail for non-existent panel")
+	}
+
+	// Test Stop
+	app.Stop()
+	if app.running {
+		t.Errorf("App should not be running after Stop")
 	}
 }
 
@@ -272,7 +360,7 @@ func TestSharedPointersIntegration(t *testing.T) {
 	}()
 
 	// Create test app
-	app := NewApp(layout)
+	app := NewApp(layout, nil)
 
 	// Start the app in goroutine
 	go app.Run()

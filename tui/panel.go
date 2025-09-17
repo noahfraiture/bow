@@ -182,7 +182,7 @@ func displayWidth(s string) int {
 	return count
 }
 
-type layout interface {
+type Layout interface {
 	position(x, y, w, h int) []Panel
 }
 
@@ -195,15 +195,15 @@ type PanelNode struct {
 // HorizontalSplit divides the area into left and right sections.
 // Left takes half the width, right takes the rest.
 type HorizontalSplit struct {
-	Left  layout
-	Right layout
+	Left  Layout
+	Right Layout
 }
 
 // VerticalSplit divides the area into top and bottom sections.
 // Top takes half the height, bottom takes the rest.
 type VerticalSplit struct {
-	Top    layout
-	Bottom layout
+	Top    Layout
+	Bottom Layout
 }
 
 func (pn *PanelNode) position(x, y, w, h int) []Panel {

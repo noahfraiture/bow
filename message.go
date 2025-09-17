@@ -13,7 +13,7 @@ func (mp *messagePanel) Update(msg tui.InputMessage) bool {
 	return redraw
 }
 
-func newMessagePanel(name string, msg *string) messagePanel {
+func newMessagePanel(name string) messagePanel {
 	return messagePanel{
 		TextPanel: &tui.TextPanel{
 			PanelBase: tui.PanelBase{
@@ -22,6 +22,6 @@ func newMessagePanel(name string, msg *string) messagePanel {
 			},
 			Text: []rune{},
 		},
-		msg: msg,
+		msg: new(string),
 	}
 }

@@ -98,6 +98,15 @@ func parseDiff(line string) (diff, bool) {
 }
 
 func getDiff() ([]diff, error) {
+	return []diff{{
+		status:  2,
+		id:      "1",
+		message: "1",
+	}, {
+		status:  1,
+		id:      "2",
+		message: "2",
+	}}, nil
 	cmd := exec.Command("arc", "list")
 	output, err := cmd.Output()
 	if err != nil {
