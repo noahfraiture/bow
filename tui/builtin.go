@@ -64,6 +64,12 @@ func (lp *ListPanel[T]) Draw(active bool) string {
 	return strings.Join(lines, "\n")
 }
 
+// CursorPosition returns the cursor position for ListPanel.
+// No cursor is shown for list panels.
+func (lp *ListPanel[T]) CursorPosition(active bool) (x, y int, show bool) {
+	return 0, 0, false
+}
+
 // Update handles input for the TextPanel, managing cursor and text editing.
 // Supports arrow keys, backspace, enter, and printable characters.
 // Returns true if the panel needs to be redrawn.
@@ -128,6 +134,33 @@ func (tp *TextPanel) Draw(active bool) string {
 	return string(tp.Text)
 }
 
+// CursorPosition calculates and returns the cursor position for TextPanel.
+// Returns the position and true if the panel should show a cursor.
+func (tp *TextPanel) CursorPosition(active bool) (x, y int, show bool) {
+	if !active {
+		return 0, 0, false
+	}
+	var startX, startY, maxX int
+	if tp.Border {
+		startX = tp.x + 1
+		startY = tp.y + 1
+		maxX = tp.x + tp.w - 2
+	} else {
+		startX = tp.x
+		if tp.Title != "" {
+			startY = tp.y + 1
+		} else {
+			startY = tp.y
+		}
+		maxX = tp.x + tp.w - 1
+	}
+	cursorX := startX + tp.Cursor
+	if cursorX > maxX {
+		cursorX = maxX
+	}
+	return cursorX, startY, true
+}
+
 // Update handles input for the InfoPanel.
 // No-op implementation; InfoPanel does not respond to input.
 // Returns false.
@@ -139,4 +172,10 @@ func (ip *InfoPanel) Update(msg InputMessage) bool {
 // Joins all lines with newlines.
 func (ip *InfoPanel) Draw(active bool) string {
 	return strings.Join(ip.Lines, "\n")
+}
+
+// CursorPosition returns the cursor position for InfoPanel.
+// No cursor is shown for info panels.
+func (ip *InfoPanel) CursorPosition(active bool) (x, y int, show bool) {
+	return 0, 0, false
 }

@@ -28,13 +28,28 @@ func (pb *PanelBase) GetBase() *PanelBase {
 	return pb
 }
 
+// CursorPosition returns the cursor position for PanelBase.
+// Default implementation shows no cursor.
+func (pb *PanelBase) CursorPosition(active bool) (x, y int, show bool) {
+	return 0, 0, false
+}
+
 // Panel defines the interface for UI panels that can update and draw themselves.
 // Implementations should embed PanelBase (or another existing panel) to inherit
 // common functionality like positioning and borders. Override Update and Draw as needed, but keep GetBase for internal use.
 type Panel interface {
+	// GetBase returns the PanelBase instance.
+	// This is used internally by the layout system; users typically don't need to call it directly if the embed a PanelBase
 	GetBase() *PanelBase
+	// Update handles input messages for the panel.
+	// Returns true if the message was handled, false otherwise.
 	Update(msg InputMessage) bool
+	// Draw renders the panel's content as a string.
+	// The active parameter indicates if the panel is currently active.
 	Draw(active bool) string
+	// CursorPosition returns the cursor position within the panel.
+	// Returns x, y coordinates and whether to show the cursor.
+	CursorPosition(active bool) (x, y int, show bool)
 }
 
 // Update handles input for the base panel.

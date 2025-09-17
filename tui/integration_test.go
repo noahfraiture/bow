@@ -36,6 +36,10 @@ func (cp *CounterPanel) Draw(active bool) string {
 	return strings.Join(lines, "\n")
 }
 
+func (cp *CounterPanel) CursorPosition(active bool) (x, y int, show bool) {
+	return 0, 0, false
+}
+
 type dummyItem struct {
 	Name  string
 	Value int

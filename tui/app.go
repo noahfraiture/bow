@@ -118,51 +118,57 @@ func (a *App) draw() {
 	if a.noDraw {
 		return
 	}
-	a.layoutPanels(a.layout)
 	clearScreen()
+	a.drawPanels()
+	a.drawStatusBar()
+	a.drawCursor()
+	fmt.Print(reset)
+}
+
+func (a *App) drawPanels() {
 	for i, p := range a.panels {
 		active := i == a.activeIdx
-		content := p.Draw(active)
-		if content == "" {
-			continue
-		}
-		full := p.GetBase().wrapWithBorder(content, active)
-		if full == "" {
-			continue
-		}
-		lines := strings.Split(full, "\n")
-		for j, line := range lines {
-			if j >= p.GetBase().h {
-				break
-			}
-			writeAt(p.GetBase().x, p.GetBase().y+j, line)
-		}
+		a.drawPanel(p, active)
 	}
+}
+
+func (a *App) drawPanel(p Panel, active bool) {
+	content := p.Draw(active)
+	if content == "" {
+		return
+	}
+	full := p.GetBase().wrapWithBorder(content, active)
+	if full == "" {
+		return
+	}
+	lines := strings.Split(full, "\n")
+	for j, line := range lines {
+		if j >= p.GetBase().h {
+			break
+		}
+		writeAt(p.GetBase().x, p.GetBase().y+j, line)
+	}
+}
+
+func (a *App) drawStatusBar() {
 	status := a.handler.GetStatus()
 	writeAt(0, a.term.rows-1, padRightRuneString(status, a.term.cols))
+}
 
-	if tp, ok := a.panels[a.activeIdx].(*TextPanel); ok && a.activeIdx < len(a.panels) {
+func (a *App) drawCursor() {
+	if a.activeIdx >= len(a.panels) {
+		fmt.Print(HideCursor)
+		return
+	}
+	p := a.panels[a.activeIdx]
+	active := true // since it's the active panel
+	x, y, show := p.CursorPosition(active)
+	if show {
 		fmt.Print(ShowCursor)
-		var startX, startY, maxX int
-		if tp.Border {
-			startX = tp.x + 1
-			startY = tp.y + 1
-			maxX = tp.x + tp.w - 2
-		} else {
-			startX = tp.x
-			if tp.Title != "" {
-				startY = tp.y + 1
-			} else {
-				startY = tp.y
-			}
-			maxX = tp.x + tp.w - 1
-		}
-		cursorX := min(startX+tp.Cursor, maxX)
-		writeAt(cursorX, startY, "")
+		writeAt(x, y, "")
 	} else {
 		fmt.Print(HideCursor)
 	}
-	fmt.Print(reset)
 }
 
 // SwitchPanel switches to the next or previous panel based on direction.
