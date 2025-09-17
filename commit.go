@@ -58,6 +58,7 @@ func getCommits() ([]commit, error) {
 
 	commitsIter, err := repo.Log(&git.LogOptions{Order: git.LogOrderCommitterTime})
 	if err != nil {
+		// FIX : error when on worktree ? no reference found
 		return nil, fmt.Errorf("failed to get commit log: %w", err)
 	}
 	commits := []commit{}

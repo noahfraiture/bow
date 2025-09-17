@@ -53,6 +53,7 @@ func NewCmdPanel(name string, from, on *commit, diff *diff, msg *string) command
 }
 
 func (cp *commandPanel) runCmd() error {
+	// FIX : patch might not be the best as phabricator now ignores the base and has no commit. Maybe checkout is better, I have "context not available" when look at the diff and the test do not run correctly
 	patch, err := cp.on.Patch(cp.from.Commit)
 	if err != nil {
 		return fmt.Errorf("failed to get patch from commits")
@@ -73,14 +74,19 @@ func (cp *commandPanel) runCmd() error {
 		return err
 	}
 	defer file.Close()
-	fmt.Fprintf(file, "Running command: arc diff --raw --update %s --message %s\n", cp.diff.id, *cp.msg)
+	_, err = fmt.Fprintf(file, "Running command: arc diff --raw --update %s --message %s\n", cp.diff.id, *cp.msg)
+	if err != nil {
+		return fmt.Errorf("failed to create command: %w", err)
+	}
 	switch cp.Items[cp.Selected] {
 	case Create:
 		// TODO : message !
+		// template, could change based on the selected command and we would confirm in this panel ? but key enter new line or confirm ?
 	case Update:
 		// Log the command
 		cmd := exec.Command("arc", "diff", "--raw", "--update", cp.diff.id, "--message", *cp.msg)
 		cmd.Stdin = patcherReader
+		// TODO : send to actual stdout after close or in panel ? could be the best
 		cmd.Stdout = file
 		cmd.Stderr = file
 		return cmd.Run()
