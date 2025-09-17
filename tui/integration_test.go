@@ -13,16 +13,16 @@ type CounterPanel struct {
 	Count *int
 }
 
-func (cp *CounterPanel) Update(msg InputMessage) bool {
+func (cp *CounterPanel) Update(msg InputMessage) (handled bool, redraw bool) {
 	switch {
 	case msg.IsChar('+'):
 		*cp.Count++
-		return true
+		return true, true
 	case msg.IsChar('-'):
 		*cp.Count--
-		return true
+		return true, true
 	}
-	return false
+	return false, false
 }
 
 func (cp *CounterPanel) Draw(active bool) string {
@@ -54,12 +54,12 @@ type dummyPanel struct {
 	item *dummyItem
 }
 
-func (dp *dummyPanel) Update(msg InputMessage) bool {
-	redraw := dp.ListPanel.Update(msg)
+func (dp *dummyPanel) Update(msg InputMessage) (handled bool, redraw bool) {
+	handled, redraw = dp.ListPanel.Update(msg)
 	if len(dp.Items) > 0 && dp.Selected >= 0 && dp.Selected < len(dp.Items) {
 		*dp.item = dp.Items[dp.Selected]
 	}
-	return redraw
+	return handled, redraw
 }
 
 func (dp *dummyPanel) Draw(active bool) string {
@@ -158,18 +158,18 @@ func TestGlobalHandlerIntegration(t *testing.T) {
 	}
 
 	// Test Tab
-	handled, redraw := app.handler.UpdateGlobal(app, newKeyMessage(KeyTab, []byte{}))
-	if !handled || !redraw {
-		t.Errorf("Tab should be handled and redraw")
+	redraw := app.handler.UpdateGlobal(app, newKeyMessage(KeyTab, []byte{}))
+	if !redraw {
+		t.Errorf("Tab should redraw")
 	}
 	if app.activeIdx != 0 { // Only one panel, should stay 0
 		t.Errorf("Active index should be 0, got %d", app.activeIdx)
 	}
 
 	// Test quit
-	handled, redraw = app.handler.UpdateGlobal(app, newCharMessage('q', []byte{}))
-	if !handled || redraw {
-		t.Errorf("Quit should be handled and not redraw")
+	redraw = app.handler.UpdateGlobal(app, newCharMessage('q', []byte{}))
+	if redraw {
+		t.Errorf("Quit should not redraw")
 	}
 	if app.running {
 		t.Errorf("App should not be running after quit")
@@ -395,11 +395,11 @@ type testHandler struct {
 	*DefaultGlobalHandler
 }
 
-func (th *testHandler) UpdateGlobal(app *App, msg InputMessage) (handled bool, redraw bool) {
+func (th *testHandler) UpdateGlobal(app *App, msg InputMessage) (redraw bool) {
 	switch {
 	case msg.HasModifier(ModShift) && msg.IsKey(KeyTab):
 		app.SwitchPanel(-1) // Cycle backward
-		return true, true
+		return true
 	default:
 		return th.DefaultGlobalHandler.UpdateGlobal(app, msg)
 	}
@@ -422,9 +422,9 @@ func TestShiftTabHandler(t *testing.T) {
 
 	// Test Shift+Tab cycles backward
 	msg := newKeyMessageWithModifiers(KeyTab, []byte{}, []Modifier{ModShift})
-	handled, redraw := h.UpdateGlobal(app, msg)
-	if !handled || !redraw {
-		t.Errorf("Shift+Tab should be handled and redraw")
+	redraw := h.UpdateGlobal(app, msg)
+	if !redraw {
+		t.Errorf("Shift+Tab should redraw")
 	}
 	if app.activeIdx != 0 { // Should cycle to 0
 		t.Errorf("Active index should be 0 after Shift+Tab, got %d", app.activeIdx)
@@ -432,9 +432,9 @@ func TestShiftTabHandler(t *testing.T) {
 
 	// Test again to cycle from 0 to 2 (wrap around)
 	app.activeIdx = 0
-	handled, redraw = h.UpdateGlobal(app, msg)
-	if !handled || !redraw {
-		t.Errorf("Shift+Tab should be handled and redraw")
+	redraw = h.UpdateGlobal(app, msg)
+	if !redraw {
+		t.Errorf("Shift+Tab should redraw")
 	}
 	if app.activeIdx != 2 { // Should cycle to 2
 		t.Errorf("Active index should be 2 after Shift+Tab from 0, got %d", app.activeIdx)

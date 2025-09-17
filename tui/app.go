@@ -154,19 +154,19 @@ func (a *App) callOnPanelSwitch() {
 
 // handleMessage processes an InputMessage
 func (a *App) handleMessage(msg InputMessage) {
-	handled, redraw := a.handler.UpdateGlobal(a, msg)
-	if handled {
-		if redraw {
-			a.draw()
+	if a.activeIdx < len(a.panels) {
+		handled, redraw := a.panels[a.activeIdx].Update(msg)
+		if handled {
+			if redraw {
+				a.draw()
+			}
+			return
 		}
-		return
 	}
 
-	if a.activeIdx < len(a.panels) {
-		needsRedraw := a.panels[a.activeIdx].Update(msg)
-		if needsRedraw {
-			a.draw()
-		}
+	redraw := a.handler.UpdateGlobal(a, msg)
+	if redraw {
+		a.draw()
 	}
 }
 

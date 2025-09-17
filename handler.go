@@ -22,7 +22,7 @@ func (h *handler) GetStatus() string {
 
 func (h *handler) OnPanelSwitch(app *tui.App, panelName string) {}
 
-func (h *handler) UpdateGlobal(app *tui.App, msg tui.InputMessage) (handled bool, redraw bool) {
+func (h *handler) UpdateGlobal(app *tui.App, msg tui.InputMessage) (redraw bool) {
 	switch {
 	case msg.IsChar('u'):
 		if h.activeCommand != Update {
@@ -31,18 +31,16 @@ func (h *handler) UpdateGlobal(app *tui.App, msg tui.InputMessage) (handled bool
 				Top:    &tui.PanelNode{Panel: &h.panels.diffs},
 				Bottom: &tui.PanelNode{Panel: &h.panels.updateMsg},
 			}
-			redraw = true
+			return true
 		}
-		handled = true
 	case msg.IsChar('c'):
 		if h.activeCommand != Create {
 			h.activeCommand = Create
 			*h.rightPanel = &tui.PanelNode{Panel: &h.panels.createMsg}
-			redraw = true
+			return true
 		}
-		handled = true
 	default:
 		return h.DefaultGlobalHandler.UpdateGlobal(app, msg)
 	}
-	return
+	return false
 }

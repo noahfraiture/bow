@@ -42,8 +42,8 @@ type Panel interface {
 	// This is used internally by the layout system; users typically don't need to call it directly if the embed a PanelBase
 	GetBase() *PanelBase
 	// Update handles input messages for the panel.
-	// Returns true if the message was handled, false otherwise.
-	Update(msg InputMessage) bool
+	// Returns handled (true if input was processed) and redraw (true if panel needs redrawing).
+	Update(msg InputMessage) (handled bool, redraw bool)
 	// Draw renders the panel's content as a string.
 	// The active parameter indicates if the panel is currently active.
 	Draw(active bool) string
@@ -53,10 +53,10 @@ type Panel interface {
 }
 
 // Update handles input for the base panel.
-// Default implementation does nothing and returns false.
+// Default implementation does nothing and returns false, false.
 // Override in custom panels to handle user input.
-func (pb *PanelBase) Update(msg InputMessage) bool {
-	return false
+func (pb *PanelBase) Update(msg InputMessage) (handled bool, redraw bool) {
+	return false, false
 }
 
 // Draw renders the base panel's content.

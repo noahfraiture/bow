@@ -37,12 +37,12 @@ func (cp *commitPanel) Draw(_ bool) string {
 	return buffer.String()
 }
 
-func (cp *commitPanel) Update(msg tui.InputMessage) bool {
-	redraw := cp.ListPanel.Update(msg)
+func (cp *commitPanel) Update(msg tui.InputMessage) (handled bool, redraw bool) {
+	handled, redraw = cp.ListPanel.Update(msg)
 	if len(cp.Items) > 0 && cp.Selected >= 0 && cp.Selected < len(cp.Items) {
 		*cp.commit = cp.Items[cp.Selected]
 	}
-	return redraw
+	return handled, redraw
 }
 
 func getCommits() ([]commit, error) {

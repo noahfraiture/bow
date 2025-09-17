@@ -29,21 +29,21 @@ type InfoPanel struct {
 }
 
 // Update handles input for the ListPanel, updating selection based on keys.
-// Returns true if the panel needs to be redrawn.
-func (lp *ListPanel[T]) Update(msg InputMessage) bool {
+// Returns handled and redraw.
+func (lp *ListPanel[T]) Update(msg InputMessage) (handled bool, redraw bool) {
 	switch {
 	case msg.IsChar('k'), msg.IsKey(KeyUp):
 		if lp.Selected > 0 {
 			lp.Selected--
-			return true
+			return true, true
 		}
 	case msg.IsChar('j'), msg.IsKey(KeyDown):
 		if lp.Selected < len(lp.Items)-1 {
 			lp.Selected++
-			return true
+			return true, true
 		}
 	}
-	return false
+	return false, false
 }
 
 // Draw renders the ListPanel's content as a string.
@@ -72,30 +72,30 @@ func (lp *ListPanel[T]) CursorPosition(active bool) (x, y int, show bool) {
 
 // Update handles input for the TextPanel, managing cursor and text editing.
 // Supports arrow keys, backspace, enter, and printable characters.
-// Returns true if the panel needs to be redrawn.
-func (tp *TextPanel) Update(msg InputMessage) bool {
+// Returns handled and redraw.
+func (tp *TextPanel) Update(msg InputMessage) (handled bool, redraw bool) {
 	switch {
 	case msg.IsKey(KeyLeft):
 		if tp.Cursor > 0 {
 			tp.Cursor--
-			return true
+			return true, true
 		}
 	case msg.IsKey(KeyRight):
 		if tp.Cursor < len(tp.Text) {
 			tp.Cursor++
-			return true
+			return true, true
 		}
 	case msg.IsKey(KeyBackspace):
 		if tp.Cursor > 0 && len(tp.Text) > 0 {
 			i := tp.Cursor
 			tp.Text = append(tp.Text[:i-1], tp.Text[i:]...)
 			tp.Cursor--
-			return true
+			return true, true
 		}
 	case msg.IsKey(KeyEnter):
 		tp.Text = []rune{}
 		tp.Cursor = 0
-		return true
+		return true, true
 	case msg.IsChar(' '):
 		// Handle space character
 		i := tp.Cursor
@@ -107,7 +107,7 @@ func (tp *TextPanel) Update(msg InputMessage) bool {
 		newText = append(newText, after...)
 		tp.Text = newText
 		tp.Cursor++
-		return true
+		return true, true
 	default:
 		if msg.keyType == KeyTypeChar && msg.char >= 32 && msg.char <= 126 {
 			i := tp.Cursor
@@ -119,10 +119,10 @@ func (tp *TextPanel) Update(msg InputMessage) bool {
 			newText = append(newText, after...)
 			tp.Text = newText
 			tp.Cursor++
-			return true
+			return true, true
 		}
 	}
-	return false
+	return false, false
 }
 
 // Draw renders the TextPanel's text content as a string.
@@ -154,18 +154,15 @@ func (tp *TextPanel) CursorPosition(active bool) (x, y int, show bool) {
 		}
 		maxX = tp.x + tp.w - 1
 	}
-	cursorX := startX + tp.Cursor
-	if cursorX > maxX {
-		cursorX = maxX
-	}
+	cursorX := min(startX+tp.Cursor, maxX)
 	return cursorX, startY, true
 }
 
 // Update handles input for the InfoPanel.
 // No-op implementation; InfoPanel does not respond to input.
-// Returns false.
-func (ip *InfoPanel) Update(msg InputMessage) bool {
-	return false
+// Returns false, false.
+func (ip *InfoPanel) Update(msg InputMessage) (handled bool, redraw bool) {
+	return false, false
 }
 
 // Draw renders the InfoPanel's lines as a string.

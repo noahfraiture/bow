@@ -25,15 +25,17 @@ type commandPanel struct {
 	msg  *string
 }
 
-func (cp *commandPanel) Update(msg tui.InputMessage) bool {
+func (cp *commandPanel) Update(msg tui.InputMessage) (handled bool, redraw bool) {
 	if msg.IsKey(tui.KeyEnter) {
 		cp.Stop()
 		err := cp.runCmd()
 		if err != nil {
 			panic(err)
 		}
+		return true, false // Handled, no redraw since stopping
 	}
-	return cp.ListPanel.Update(msg)
+	handled, redraw = cp.ListPanel.Update(msg)
+	return handled, redraw
 }
 
 func NewCmdPanel(name string, from, on *commit, diff *diff, msg *string) commandPanel {

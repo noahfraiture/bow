@@ -7,10 +7,10 @@ type messagePanel struct {
 	msg *string
 }
 
-func (mp *messagePanel) Update(msg tui.InputMessage) bool {
-	redraw := mp.TextPanel.Update(msg)
+func (mp *messagePanel) Update(msg tui.InputMessage) (handled bool, redraw bool) {
+	handled, redraw = mp.TextPanel.Update(msg)
 	*mp.msg = string(mp.Text)
-	return redraw
+	return handled, redraw
 }
 
 func newMessagePanel(name string) messagePanel {

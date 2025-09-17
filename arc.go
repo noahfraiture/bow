@@ -68,12 +68,12 @@ func (dp *diffPanel) Draw(_ bool) string {
 	return buffer.String()
 }
 
-func (dp *diffPanel) Update(msg tui.InputMessage) bool {
-	redraw := dp.ListPanel.Update(msg)
+func (dp *diffPanel) Update(msg tui.InputMessage) (handled bool, redraw bool) {
+	handled, redraw = dp.ListPanel.Update(msg)
 	if len(dp.Items) > 0 && dp.Selected >= 0 && dp.Selected < len(dp.Items) {
 		*dp.diff = dp.Items[dp.Selected]
 	}
-	return redraw
+	return handled, redraw
 }
 
 var diffRe = regexp.MustCompile(`(Needs Review|Draft|Changes Planned|Accepted).+(D\d{5}): (.*)`)
