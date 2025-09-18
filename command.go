@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 )
 
 type command string
@@ -55,12 +54,9 @@ func NewCmdPanel(name string, from, on *commit, diff *diff, msg *string) command
 }
 
 func (cp *commandPanel) runCmd() error {
+	// TODO : this panel is actually not used anymore, i need another place to confirm
 	// FIX : patch might not be the best as phabricator now ignores the base and has no commit. Maybe checkout is better, I have "context not available" when look at the diff and the test do not run correctly
-	patch, err := cp.on.Patch(cp.from.Commit)
-	if err != nil {
-		return fmt.Errorf("failed to get patch from commits")
-	}
-	patcherReader := strings.NewReader(patch.String())
+	// TEST : parameter `--head`
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return err
@@ -86,8 +82,13 @@ func (cp *commandPanel) runCmd() error {
 		// template, could change based on the selected command and we would confirm in this panel ? but key enter new line or confirm ?
 	case Update:
 		// Log the command
-		cmd := exec.Command("arc", "diff", "--raw", "--update", cp.diff.id, "--message", *cp.msg)
-		cmd.Stdin = patcherReader
+		cmd := exec.Command(
+			"arc",
+			"diff", cp.from.Hash.String(),
+			"--head", cp.from.Hash.String(),
+			"--update", cp.diff.id,
+			"--message", *cp.msg,
+		)
 		// TODO : send to actual stdout after close or in panel ? could be the best
 		cmd.Stdout = file
 		cmd.Stderr = file
