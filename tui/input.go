@@ -32,7 +32,7 @@ func (a *App) parseInput() (InputMessage, error) {
 
 	// Handle control characters
 	if b < 32 {
-		msg := newCharMessage(rune(b), raw)
+		msg := newCharMessage(rune(b+96), raw)
 		msg.modifiers = append(msg.modifiers, ModCtrl)
 		return msg, nil
 	}

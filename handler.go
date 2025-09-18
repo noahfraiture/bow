@@ -2,6 +2,7 @@ package main
 
 import (
 	"app/tui"
+	"os/exec"
 )
 
 type handler struct {
@@ -39,8 +40,22 @@ func (h *handler) UpdateGlobal(app *tui.App, msg tui.InputMessage) (redraw bool)
 			*h.rightPanel = &tui.PanelNode{Panel: &h.panels.createMsg}
 			return true
 		}
+	case msg.HasModifier(tui.ModCtrl) && msg.IsChar('s'):
+		h.runUpdate()
+		app.Stop()
 	default:
 		return h.DefaultGlobalHandler.UpdateGlobal(app, msg)
 	}
 	return false
+}
+
+func (h *handler) runUpdate() error {
+	cmd := exec.Command(
+		"arc",
+		"diff", h.diffFromCommit.Hash.String(),
+		"--head", h.diffOnCommit.Hash.String(),
+		"--update", h.diffToUpdate.id,
+		"--message", *h.updateMsg,
+	)
+	return cmd.Run()
 }
