@@ -16,6 +16,10 @@ Bow is an interactive terminal user interface (TUI) utility for managing Arcanis
 - Arcanist (Phabricator's command-line tool)
 - A Git repository with commits
 
+## Development
+
+Set `BOW_DEV=1` to run in development mode, which uses mock data instead of executing `arc` commands. Useful for testing without Arcanist installed.
+
 ## Installation
 
 1. Clone the repository:

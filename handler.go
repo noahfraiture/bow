@@ -2,6 +2,7 @@ package main
 
 import (
 	"app/tui"
+	"fmt"
 	"os/exec"
 )
 
@@ -41,7 +42,9 @@ func (h *handler) UpdateGlobal(app *tui.App, msg tui.InputMessage) (redraw bool)
 			return true
 		}
 	case msg.HasModifier(tui.ModCtrl) && msg.IsChar('s'):
-		h.runUpdate()
+		if err := h.runUpdate(); err != nil {
+			fmt.Printf("Error running update: %v\n", err)
+		}
 		app.Stop()
 	default:
 		return h.DefaultGlobalHandler.UpdateGlobal(app, msg)
@@ -50,6 +53,10 @@ func (h *handler) UpdateGlobal(app *tui.App, msg tui.InputMessage) (redraw bool)
 }
 
 func (h *handler) runUpdate() error {
+	if isDevMode() {
+		fmt.Printf("Would run: arc diff %s --head %s --update %s --message %s\n", h.diffFromCommit.Hash.String(), h.diffOnCommit.Hash.String(), h.diffToUpdate.id, *h.updateMsg)
+		return nil
+	}
 	cmd := exec.Command(
 		"arc",
 		"diff", h.diffFromCommit.Hash.String(),

@@ -173,6 +173,7 @@ func TestCreateAppIntegration(t *testing.T) {
 	}
 
 	// Note: For simplicity, using real getDiff; assumes arc is available or modify createApp to use getDiffTest
+	os.Setenv("BOW_DEV", "1")
 
 	app, err := createApp()
 	if err != nil {
