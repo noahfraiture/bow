@@ -3,6 +3,7 @@ package tui
 import (
 	"bufio"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"slices"
@@ -66,7 +67,7 @@ func (a *App) Run() {
 	if err == nil {
 		a.term.prevStty = prev
 	} else {
-		fmt.Fprintln(os.Stderr, "warning: could not enable raw mode:", err)
+		slog.Warn("could not enable raw mode", "error", err)
 	}
 
 	a.sigch = make(chan os.Signal, 1)

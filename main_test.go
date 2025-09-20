@@ -1,8 +1,10 @@
 package main
 
 import (
+	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -173,9 +175,9 @@ func TestCreateAppIntegration(t *testing.T) {
 	}
 
 	// Note: For simplicity, using real getDiff; assumes arc is available or modify createApp to use getDiffTest
-	os.Setenv("BOW_DEV", "1")
+	_ = os.Setenv("BOW_DEV", "1")
 
-	app, err := createApp()
+	app, _, err := createApp()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -224,6 +226,42 @@ func TestCreateAppIntegration(t *testing.T) {
 	// Basic assertion: app was created without panic
 	if app == nil {
 		t.Error("App is nil")
+	}
+}
+
+func TestLogging(t *testing.T) {
+	tempDir := t.TempDir()
+	oldHome := os.Getenv("HOME")
+	_ = os.Setenv("HOME", tempDir)
+	defer func() { _ = os.Setenv("HOME", oldHome) }()
+
+	// Setup logging as in main
+	cacheDir := filepath.Join(os.Getenv("HOME"), ".cache", "bow")
+	_ = os.MkdirAll(cacheDir, 0755)
+	logFile := filepath.Join(cacheDir, "bow.log")
+	file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = file.Close() }()
+
+	handler := slog.NewTextHandler(file, &slog.HandlerOptions{Level: slog.LevelDebug})
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
+
+	// Log something
+	slog.Info("test log message")
+
+	// Close file to flush
+	_ = file.Close()
+
+	// Check file content
+	content, err := os.ReadFile(logFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(content), "test log message") {
+		t.Errorf("log file does not contain expected content: %s", content)
 	}
 }
 

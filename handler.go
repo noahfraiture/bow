@@ -3,6 +3,7 @@ package main
 import (
 	"app/tui"
 	"fmt"
+	"log/slog"
 	"os/exec"
 )
 
@@ -16,6 +17,7 @@ type handler struct {
 	diffToUpdate   *diff
 	updateMsg      *string
 	createMsg      *string
+	lastOutput     string
 }
 
 func (h *handler) GetStatus() string {
@@ -45,9 +47,11 @@ func (h *handler) UpdateGlobal(app *tui.App, msg tui.InputMessage) (redraw bool)
 			return true
 		}
 	case msg.HasModifier(tui.ModCtrl) && msg.IsChar('s'):
-		if err := h.runUpdate(); err != nil {
-			fmt.Printf("Error running update: %v\n", err)
+		output, err := h.runUpdate()
+		if err != nil {
+			slog.Error("failed to run update", "error", err, "output", string(output))
 		}
+		h.lastOutput = string(output)
 		app.Stop()
 	default:
 		return h.DefaultGlobalHandler.UpdateGlobal(app, msg)
@@ -55,10 +59,10 @@ func (h *handler) UpdateGlobal(app *tui.App, msg tui.InputMessage) (redraw bool)
 	return false
 }
 
-func (h *handler) runUpdate() error {
+func (h *handler) runUpdate() ([]byte, error) {
 	if isDevMode() {
-		fmt.Printf("Would run: arc diff %s --head %s --update %s --message %s\n", h.diffFromCommit.Hash.String(), h.diffOnCommit.Hash.String(), h.diffToUpdate.id, *h.updateMsg)
-		return nil
+		output := fmt.Sprintf("Would run: arc diff %s --head %s --update %s --message %s\n", h.diffFromCommit.Hash.String(), h.diffOnCommit.Hash.String(), h.diffToUpdate.id, *h.updateMsg)
+		return []byte(output), nil
 	}
 	cmd := exec.Command(
 		"arc",
@@ -67,5 +71,5 @@ func (h *handler) runUpdate() error {
 		"--update", h.diffToUpdate.id,
 		"--message", *h.updateMsg,
 	)
-	return cmd.Run()
+	return cmd.CombinedOutput()
 }
