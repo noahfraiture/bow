@@ -15,7 +15,7 @@ Written in Go, it includes a custom TUI library in `tui/` for building terminal 
 ## Key Concepts
 
 - **Panel Pattern**: UI components implement the `Panel` interface with `Update()` for input handling and `Draw()` for rendering. Embed `PanelBase` for shared properties.
-- **Layout System**: Dynamic arrangement of panels using splits (horizontal/vertical) and nodes.
+- **Layout System**: Dynamic arrangement of panels using splits (horizontal/vertical) and nodes with weights for proportional sizing.
 - **Input Handling**: Structured messages for keyboard input, enabling key detection and character processing.
 - **Builtin Panels**: Pre-built components like ListPanel[T] for selectable lists, TextPanel for input, and InfoPanel for display.
 - **Modularity**: Code organized into focused modules; avoid global state by passing dependencies explicitly.
@@ -42,7 +42,7 @@ Written in Go, it includes a custom TUI library in `tui/` for building terminal 
 
 - **Development Workflow**: Test and build after changes. Run `go test ./...`, `go build`, and `golangci-lint run ./...`. Ensure tests pass before completion.
 - **Panel Implementation**: Follow `Panel` interface; embed `PanelBase`; use generics for lists.
-- **Layout Usage**: Arrange panels with splits and nodes.
+- **Layout Usage**: Arrange panels with splits, nodes, and weights for proportional sizing.
 - **Integration**: Use `go-git` for commits, parse `arc list` output for diffs, and execute `arc diff` commands.
 - **Input/Rendering**: Handle via `InputMessage`; redraw when `Update()` returns true; use ANSI codes.
 - **Error Handling**: Wrap errors with `%w`; fatal logs in main.

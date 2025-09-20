@@ -30,8 +30,11 @@ func (h *handler) UpdateGlobal(app *tui.App, msg tui.InputMessage) (redraw bool)
 		if h.activeCommand != Update {
 			h.activeCommand = Update
 			*h.rightPanel = &tui.VerticalSplit{
-				Top:    &tui.PanelNode{Panel: &h.panels.diffs},
-				Bottom: &tui.PanelNode{Panel: &h.panels.updateMsg},
+				Panels: []tui.Layout{
+					&tui.PanelNode{Panel: &h.panels.diffs, Weight: 1},
+					&tui.PanelNode{Panel: &h.panels.updateMsg, Weight: 1},
+				},
+				Weight: 1,
 			}
 			return true
 		}

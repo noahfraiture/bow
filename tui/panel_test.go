@@ -414,3 +414,349 @@ func TestInfoPanelDraw(t *testing.T) {
 		}
 	})
 }
+
+// Mock panel for testing
+type mockPanel struct {
+	PanelBase
+	id string
+}
+
+func (mp *mockPanel) Draw(active bool) string {
+	return mp.id
+}
+
+func TestWeightedLayouts(t *testing.T) {
+	t.Run("PanelNode_GetWeight", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			weight   int
+			expected int
+		}{
+			{"positive weight", 5, 5},
+			{"zero weight", 0, 1},
+			{"negative weight", -1, 1},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				pn := &PanelNode{Weight: tt.weight}
+				if got := pn.GetWeight(); got != tt.expected {
+					t.Errorf("PanelNode.GetWeight() = %v, want %v", got, tt.expected)
+				}
+			})
+		}
+	})
+
+	t.Run("HorizontalSplit_GetWeight", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			weight   int
+			expected int
+		}{
+			{"positive weight", 3, 3},
+			{"zero weight", 0, 1},
+			{"negative weight", -2, 1},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				hs := &HorizontalSplit{Weight: tt.weight}
+				if got := hs.GetWeight(); got != tt.expected {
+					t.Errorf("HorizontalSplit.GetWeight() = %v, want %v", got, tt.expected)
+				}
+			})
+		}
+	})
+
+	t.Run("VerticalSplit_GetWeight", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			weight   int
+			expected int
+		}{
+			{"positive weight", 4, 4},
+			{"zero weight", 0, 1},
+			{"negative weight", -3, 1},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				vs := &VerticalSplit{Weight: tt.weight}
+				if got := vs.GetWeight(); got != tt.expected {
+					t.Errorf("VerticalSplit.GetWeight() = %v, want %v", got, tt.expected)
+				}
+			})
+		}
+	})
+
+	t.Run("HorizontalSplit_position_equal_weights", func(t *testing.T) {
+		p1 := &mockPanel{PanelBase: PanelBase{}, id: "p1"}
+		p2 := &mockPanel{PanelBase: PanelBase{}, id: "p2"}
+		p3 := &mockPanel{PanelBase: PanelBase{}, id: "p3"}
+
+		hs := &HorizontalSplit{
+			Panels: []Layout{
+				&PanelNode{Panel: p1, Weight: 1},
+				&PanelNode{Panel: p2, Weight: 1},
+				&PanelNode{Panel: p3, Weight: 1},
+			},
+		}
+
+		panels := hs.position(0, 0, 90, 10)
+
+		if len(panels) != 3 {
+			t.Errorf("Expected 3 panels, got %d", len(panels))
+		}
+
+		// Check positions and sizes (90 width / 3 panels = 30 each)
+		expectedWidths := []int{30, 30, 30}
+		expectedX := []int{0, 30, 60}
+
+		for i, panel := range panels {
+			pb := panel.GetBase()
+			if pb.w != expectedWidths[i] {
+				t.Errorf("Panel %d width = %d, want %d", i, pb.w, expectedWidths[i])
+			}
+			if pb.x != expectedX[i] {
+				t.Errorf("Panel %d x = %d, want %d", i, pb.x, expectedX[i])
+			}
+			if pb.y != 0 {
+				t.Errorf("Panel %d y = %d, want 0", i, pb.y)
+			}
+			if pb.h != 10 {
+				t.Errorf("Panel %d h = %d, want 10", i, pb.h)
+			}
+		}
+	})
+
+	t.Run("HorizontalSplit_position_unequal_weights", func(t *testing.T) {
+		p1 := &mockPanel{PanelBase: PanelBase{}, id: "p1"}
+		p2 := &mockPanel{PanelBase: PanelBase{}, id: "p2"}
+		p3 := &mockPanel{PanelBase: PanelBase{}, id: "p3"}
+
+		hs := &HorizontalSplit{
+			Panels: []Layout{
+				&PanelNode{Panel: p1, Weight: 1}, // 1/7 of space
+				&PanelNode{Panel: p2, Weight: 2}, // 2/7 of space
+				&PanelNode{Panel: p3, Weight: 4}, // 4/7 of space
+			},
+		}
+
+		panels := hs.position(0, 0, 70, 10)
+
+		if len(panels) != 3 {
+			t.Errorf("Expected 3 panels, got %d", len(panels))
+		}
+
+		// Check positions and sizes (70 width, weights 1+2+4=7)
+		// Panel 1: (1/7)*70 = 10, Panel 2: (2/7)*70 = 20, Panel 3: (4/7)*70 = 40
+		// But last panel gets remainder, so: 10, 20, 40 (total 70)
+		expectedWidths := []int{10, 20, 40}
+		expectedX := []int{0, 10, 30}
+
+		for i, panel := range panels {
+			pb := panel.GetBase()
+			if pb.w != expectedWidths[i] {
+				t.Errorf("Panel %d width = %d, want %d", i, pb.w, expectedWidths[i])
+			}
+			if pb.x != expectedX[i] {
+				t.Errorf("Panel %d x = %d, want %d", i, pb.x, expectedX[i])
+			}
+		}
+	})
+
+	t.Run("HorizontalSplit_position_zero_weights", func(t *testing.T) {
+		p1 := &mockPanel{PanelBase: PanelBase{}, id: "p1"}
+		p2 := &mockPanel{PanelBase: PanelBase{}, id: "p2"}
+		p3 := &mockPanel{PanelBase: PanelBase{}, id: "p3"}
+
+		hs := &HorizontalSplit{
+			Panels: []Layout{
+				&PanelNode{Panel: p1, Weight: 0}, // Should get weight 1
+				&PanelNode{Panel: p2, Weight: 0}, // Should get weight 1
+				&PanelNode{Panel: p3, Weight: 0}, // Should get weight 1
+			},
+		}
+
+		panels := hs.position(0, 0, 90, 10)
+
+		if len(panels) != 3 {
+			t.Errorf("Expected 3 panels, got %d", len(panels))
+		}
+
+		// All panels should have equal width (90 / 3 = 30)
+		for i, panel := range panels {
+			pb := panel.GetBase()
+			if pb.w != 30 {
+				t.Errorf("Panel %d width = %d, want 30", i, pb.w)
+			}
+		}
+	})
+
+	t.Run("VerticalSplit_position_equal_weights", func(t *testing.T) {
+		p1 := &mockPanel{PanelBase: PanelBase{}, id: "p1"}
+		p2 := &mockPanel{PanelBase: PanelBase{}, id: "p2"}
+
+		vs := &VerticalSplit{
+			Panels: []Layout{
+				&PanelNode{Panel: p1, Weight: 1},
+				&PanelNode{Panel: p2, Weight: 1},
+			},
+		}
+
+		panels := vs.position(0, 0, 20, 40)
+
+		if len(panels) != 2 {
+			t.Errorf("Expected 2 panels, got %d", len(panels))
+		}
+
+		// Check positions and sizes (40 height / 2 panels = 20 each)
+		expectedHeights := []int{20, 20}
+		expectedY := []int{0, 20}
+
+		for i, panel := range panels {
+			pb := panel.GetBase()
+			if pb.h != expectedHeights[i] {
+				t.Errorf("Panel %d height = %d, want %d", i, pb.h, expectedHeights[i])
+			}
+			if pb.y != expectedY[i] {
+				t.Errorf("Panel %d y = %d, want %d", i, pb.y, expectedY[i])
+			}
+			if pb.x != 0 {
+				t.Errorf("Panel %d x = %d, want 0", i, pb.x)
+			}
+			if pb.w != 20 {
+				t.Errorf("Panel %d w = %d, want 20", i, pb.w)
+			}
+		}
+	})
+
+	t.Run("VerticalSplit_position_unequal_weights", func(t *testing.T) {
+		p1 := &mockPanel{PanelBase: PanelBase{}, id: "p1"}
+		p2 := &mockPanel{PanelBase: PanelBase{}, id: "p2"}
+		p3 := &mockPanel{PanelBase: PanelBase{}, id: "p3"}
+
+		vs := &VerticalSplit{
+			Panels: []Layout{
+				&PanelNode{Panel: p1, Weight: 1}, // 1/4 of space
+				&PanelNode{Panel: p2, Weight: 2}, // 2/4 of space
+				&PanelNode{Panel: p3, Weight: 1}, // 1/4 of space
+			},
+		}
+
+		panels := vs.position(0, 0, 20, 40)
+
+		if len(panels) != 3 {
+			t.Errorf("Expected 3 panels, got %d", len(panels))
+		}
+
+		// Check positions and sizes (40 height, weights 1+2+1=4)
+		// Panel 1: (1/4)*40 = 10, Panel 2: (2/4)*40 = 20, Panel 3: (1/4)*40 = 10
+		expectedHeights := []int{10, 20, 10}
+		expectedY := []int{0, 10, 30}
+
+		for i, panel := range panels {
+			pb := panel.GetBase()
+			if pb.h != expectedHeights[i] {
+				t.Errorf("Panel %d height = %d, want %d", i, pb.h, expectedHeights[i])
+			}
+			if pb.y != expectedY[i] {
+				t.Errorf("Panel %d y = %d, want %d", i, pb.y, expectedY[i])
+			}
+		}
+	})
+
+	t.Run("Nested_weighted_layouts", func(t *testing.T) {
+		// Create a complex nested layout:
+		// VerticalSplit (weight: 1)
+		// ├── HorizontalSplit (weight: 2) with 3 panels (weights: 1,1,1)
+		// └── PanelNode (weight: 1)
+
+		p1 := &mockPanel{PanelBase: PanelBase{}, id: "p1"}
+		p2 := &mockPanel{PanelBase: PanelBase{}, id: "p2"}
+		p3 := &mockPanel{PanelBase: PanelBase{}, id: "p3"}
+		p4 := &mockPanel{PanelBase: PanelBase{}, id: "p4"}
+
+		innerHS := &HorizontalSplit{
+			Panels: []Layout{
+				&PanelNode{Panel: p1, Weight: 1},
+				&PanelNode{Panel: p2, Weight: 1},
+				&PanelNode{Panel: p3, Weight: 1},
+			},
+			Weight: 2,
+		}
+
+		vs := &VerticalSplit{
+			Panels: []Layout{
+				innerHS,
+				&PanelNode{Panel: p4, Weight: 1},
+			},
+			Weight: 1,
+		}
+
+		panels := vs.position(0, 0, 60, 40)
+
+		if len(panels) != 4 {
+			t.Errorf("Expected 4 panels, got %d", len(panels))
+		}
+
+		// Vertical split: innerHS gets 2/3 of height (26px), p4 gets 1/3 (13px)
+		// But due to rounding, last panel gets remainder
+
+		// Check that panels are positioned correctly
+		pb1 := panels[0].GetBase() // p1 from innerHS
+		pb2 := panels[1].GetBase() // p2 from innerHS
+		pb3 := panels[2].GetBase() // p3 from innerHS
+		pb4 := panels[3].GetBase() // p4
+
+		// All panels from innerHS should have same Y position and height
+		if pb1.y != pb2.y || pb2.y != pb3.y {
+			t.Errorf("Inner panels should have same Y position")
+		}
+		if pb1.h != pb2.h || pb2.h != pb3.h {
+			t.Errorf("Inner panels should have same height")
+		}
+
+		// p4 should be below the inner panels
+		if pb4.y < pb1.y+pb1.h {
+			t.Errorf("p4 should be below inner panels")
+		}
+
+		// Check horizontal distribution in inner layout (60 width / 3 = 20 each)
+		if pb1.w != 20 || pb2.w != 20 || pb3.w != 20 {
+			t.Errorf("Inner panels should each have width 20, got %d, %d, %d", pb1.w, pb2.w, pb3.w)
+		}
+	})
+
+	t.Run("Empty_layouts", func(t *testing.T) {
+		hs := &HorizontalSplit{Panels: []Layout{}}
+		panels := hs.position(0, 0, 100, 50)
+		if len(panels) != 0 {
+			t.Errorf("Empty layout should return 0 panels, got %d", len(panels))
+		}
+
+		vs := &VerticalSplit{Panels: []Layout{}}
+		panels = vs.position(0, 0, 100, 50)
+		if len(panels) != 0 {
+			t.Errorf("Empty layout should return 0 panels, got %d", len(panels))
+		}
+	})
+
+	t.Run("Single_panel_layouts", func(t *testing.T) {
+		p1 := &mockPanel{PanelBase: PanelBase{}, id: "p1"}
+
+		hs := &HorizontalSplit{
+			Panels: []Layout{&PanelNode{Panel: p1, Weight: 5}},
+		}
+		panels := hs.position(0, 0, 100, 50)
+
+		if len(panels) != 1 {
+			t.Errorf("Expected 1 panel, got %d", len(panels))
+		}
+
+		pb := panels[0].GetBase()
+		if pb.x != 0 || pb.y != 0 || pb.w != 100 || pb.h != 50 {
+			t.Errorf("Single panel should fill entire space: x=%d, y=%d, w=%d, h=%d", pb.x, pb.y, pb.w, pb.h)
+		}
+	})
+}

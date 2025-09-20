@@ -34,14 +34,23 @@ func createApp() (*tui.App, error) {
 	}
 
 	defaultLayout := &tui.HorizontalSplit{
-		Left: &tui.VerticalSplit{
-			Top:    &tui.PanelNode{Panel: &panels.diffFrom},
-			Bottom: &tui.PanelNode{Panel: &panels.diffOn},
+		Panels: []tui.Layout{
+			&tui.VerticalSplit{
+				Panels: []tui.Layout{
+					&tui.PanelNode{Panel: &panels.diffFrom, Weight: 1},
+					&tui.PanelNode{Panel: &panels.diffOn, Weight: 1},
+				},
+				Weight: 2,
+			},
+			&tui.VerticalSplit{
+				Panels: []tui.Layout{
+					&tui.PanelNode{Panel: &panels.diffs, Weight: 1},
+					&tui.PanelNode{Panel: &panels.updateMsg, Weight: 0},
+				},
+				Weight: 1,
+			},
 		},
-		Right: &tui.VerticalSplit{
-			Top:    &tui.PanelNode{Panel: &panels.diffs},
-			Bottom: &tui.PanelNode{Panel: &panels.updateMsg},
-		},
+		Weight: 1,
 	}
 
 	handler := &handler{
@@ -52,7 +61,7 @@ func createApp() (*tui.App, error) {
 		createMsg:      panels.createMsg.msg,
 		panels:         panels,
 		activeCommand:  Update,
-		rightPanel:     &defaultLayout.Right,
+		rightPanel:     &defaultLayout.Panels[1],
 	}
 
 	app := tui.NewApp(defaultLayout, handler)

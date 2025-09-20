@@ -183,23 +183,27 @@ node := &tui.PanelNode{Panel: myPanel}
 
 ### HorizontalSplit
 
-Divides the area into left and right sections (50/50 split).
+Divides the area into multiple horizontal sections, each getting space proportional to its weight.
 
 ```go
 split := &tui.HorizontalSplit{
-    Left:  &tui.PanelNode{Panel: panel1},
-    Right: &tui.PanelNode{Panel: panel2},
+    Panels: []tui.Layout{
+        &tui.PanelNode{Panel: panel1, Weight: 1}, // One third of the horizontal space
+        &tui.PanelNode{Panel: panel2, Weight: 2}, // Two third of the horizontal space
+    },
 }
 ```
 
 ### VerticalSplit
 
-Divides the area into top and bottom sections (50/50 split).
+Divides the area into multiple vertical sections, each getting space proportional to its weight.
 
 ```go
 split := &tui.VerticalSplit{
-    Top:    &tui.PanelNode{Panel: panel1},
-    Bottom: &tui.PanelNode{Panel: panel2},
+    Panels: []tui.Layout{
+        &tui.PanelNode{Panel: panel1, Weight: 1},
+        &tui.PanelNode{Panel: panel2, Weight: 1},
+    },
 }
 ```
 
@@ -207,11 +211,15 @@ Layouts can be nested for complex arrangements:
 
 ```go
 layout := &tui.VerticalSplit{
-    Top: &tui.HorizontalSplit{
-        Left:  &tui.PanelNode{Panel: list},
-        Right: &tui.PanelNode{Panel: info},
+    Panels: []tui.Layout{
+        &tui.HorizontalSplit{
+            Panels: []tui.Layout{
+                &tui.PanelNode{Panel: list, Weight: 1},
+                &tui.PanelNode{Panel: info, Weight: 1},
+            },
+        },
+        &tui.PanelNode{Panel: text, Weight: 1},
     },
-    Bottom: &tui.PanelNode{Panel: text},
 }
 ```
 
@@ -315,9 +323,9 @@ The status bar at the bottom shows available actions.
 - `ListPanel[T]`: Generic selectable list panel.
 - `TextPanel`: Text input panel.
 - `InfoPanel`: Static information display panel.
-- `PanelNode`: Layout node for a single panel.
-- `HorizontalSplit`: Layout for left-right splits.
-- `VerticalSplit`: Layout for top-bottom splits.
+- `PanelNode`: Layout node for a single panel with optional weight.
+- `HorizontalSplit`: Layout for horizontal splits with weighted panels.
+- `VerticalSplit`: Layout for vertical splits with weighted panels.
 
 ### Key Functions
 

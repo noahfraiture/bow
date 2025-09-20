@@ -237,8 +237,10 @@ func TestMultiplePanelsSharedDataIntegration(t *testing.T) {
 	}
 
 	layout := &HorizontalSplit{
-		Left:  &PanelNode{Panel: counter1},
-		Right: &PanelNode{Panel: counter2},
+		Panels: []Layout{
+			&PanelNode{Panel: counter1, Weight: 1},
+			&PanelNode{Panel: counter2, Weight: 1},
+		},
 	}
 
 	// Set up pipe for input
@@ -335,8 +337,10 @@ func TestSharedPointersIntegration(t *testing.T) {
 
 	// Layout with both panels
 	layout := &HorizontalSplit{
-		Left:  &PanelNode{Panel: panelA},
-		Right: &PanelNode{Panel: panelB},
+		Panels: []Layout{
+			&PanelNode{Panel: panelA},
+			&PanelNode{Panel: panelB},
+		},
 	}
 
 	// Set up pipe for input
@@ -408,10 +412,14 @@ func (th *testHandler) UpdateGlobal(app *App, msg InputMessage) (redraw bool) {
 func TestShiftTabHandler(t *testing.T) {
 	// Create a layout with 3 panels
 	layout := &HorizontalSplit{
-		Left: &PanelNode{Panel: &PanelBase{}},
-		Right: &HorizontalSplit{
-			Left:  &PanelNode{Panel: &PanelBase{}},
-			Right: &PanelNode{Panel: &PanelBase{}},
+		Panels: []Layout{
+			&PanelNode{Panel: &PanelBase{}},
+			&HorizontalSplit{
+				Panels: []Layout{
+					&PanelNode{Panel: &PanelBase{}},
+					&PanelNode{Panel: &PanelBase{}},
+				},
+			},
 		},
 	}
 	app := NewApp(layout, nil)

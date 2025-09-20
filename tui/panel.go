@@ -199,26 +199,31 @@ func displayWidth(s string) int {
 
 type Layout interface {
 	position(x, y, w, h int) []Panel
+	GetWeight() int
 }
 
 // PanelNode represents a single panel in the layout.
+// Take space with proportion Weight / TotalWeight of layout. Minimum Weight of 1.
 // It positions the panel to fill the entire given area.
 type PanelNode struct {
-	Panel Panel
+	Panel  Panel
+	Weight int
 }
 
-// HorizontalSplit divides the area into left and right sections.
-// Left takes half the width, right takes the rest.
+// HorizontalSplit divides the area into multiple horizontal sections.
+// Take space with proportion Weight / TotalWeight of layout. Minimum Weight of 1.
+// Each panel gets space proportional to its weight.
 type HorizontalSplit struct {
-	Left  Layout
-	Right Layout
+	Panels []Layout
+	Weight int
 }
 
-// VerticalSplit divides the area into top and bottom sections.
-// Top takes half the height, bottom takes the rest.
+// VerticalSplit divides the area into multiple vertical sections.
+// Take space with proportion Weight / TotalWeight of layout. Minimum Weight of 1.
+// Each panel gets space proportional to its weight.
 type VerticalSplit struct {
-	Top    Layout
-	Bottom Layout
+	Panels []Layout
+	Weight int
 }
 
 func (pn *PanelNode) position(x, y, w, h int) []Panel {
@@ -228,19 +233,104 @@ func (pn *PanelNode) position(x, y, w, h int) []Panel {
 }
 
 func (hs *HorizontalSplit) position(x, y, w, h int) []Panel {
-	leftW := w / 2
-	rightW := w - leftW
-	var panels []Panel
-	panels = append(panels, hs.Left.position(x, y, leftW, h)...)
-	panels = append(panels, hs.Right.position(x+leftW, y, rightW, h)...)
-	return panels
+	return hs.positionPanels(x, y, w, h, true) // true for horizontal
 }
 
 func (vs *VerticalSplit) position(x, y, w, h int) []Panel {
-	topH := h / 2
-	bottomH := h - topH
-	var panels []Panel
-	panels = append(panels, vs.Top.position(x, y, w, topH)...)
-	panels = append(panels, vs.Bottom.position(x, y+topH, w, bottomH)...)
-	return panels
+	return vs.positionPanels(x, y, w, h, false) // false for vertical
+}
+
+// GetWeight returns the weight of this layout for proportional sizing
+func (pn *PanelNode) GetWeight() int {
+	if pn.Weight <= 0 {
+		return 1
+	}
+	return pn.Weight
+}
+
+// GetWeight returns the weight of this layout for proportional sizing
+func (hs *HorizontalSplit) GetWeight() int {
+	if hs.Weight <= 0 {
+		return 1
+	}
+	return hs.Weight
+}
+
+// GetWeight returns the weight of this layout for proportional sizing
+func (vs *VerticalSplit) GetWeight() int {
+	if vs.Weight <= 0 {
+		return 1
+	}
+	return vs.Weight
+}
+
+// positionPanelsWithWeights handles the common logic for positioning panels with weights
+func positionPanelsWithWeights(panels []Layout, x, y, w, h int, horizontal bool) []Panel {
+	if len(panels) == 0 {
+		return []Panel{}
+	}
+
+	totalWeight := 0
+	for _, panel := range panels {
+		totalWeight += panel.GetWeight()
+	}
+
+	if totalWeight == 0 {
+		totalWeight = len(panels)
+	}
+
+	var result []Panel
+	currentPos := x
+	if !horizontal {
+		currentPos = y
+	}
+
+	// Distribute space proportionally
+	usedSpace := 0
+	for i, panel := range panels {
+		var panelW, panelH int
+		if horizontal {
+			// fill gap due to rounding division
+			if i == len(panels)-1 {
+				panelW = w - usedSpace
+			} else {
+				panelW = (panel.GetWeight() * w) / totalWeight
+				usedSpace += panelW
+			}
+			panelH = h
+		} else {
+			// fill gap due to rounding division
+			if i == len(panels)-1 {
+				panelH = h - usedSpace
+			} else {
+				panelH = (panel.GetWeight() * h) / totalWeight
+				usedSpace += panelH
+			}
+			panelW = w
+		}
+
+		var panelX, panelY int
+		if horizontal {
+			panelX = currentPos
+			panelY = y
+			currentPos += panelW
+		} else {
+			panelX = x
+			panelY = currentPos
+			currentPos += panelH
+		}
+
+		childPanels := panel.position(panelX, panelY, panelW, panelH)
+		result = append(result, childPanels...)
+	}
+
+	return result
+}
+
+func (hs *HorizontalSplit) positionPanels(x, y, w, h int, horizontal bool) []Panel {
+	return positionPanelsWithWeights(hs.Panels, x, y, w, h, horizontal)
+}
+
+func (vs *VerticalSplit) positionPanels(x, y, w, h int, horizontal bool) []Panel {
+	return positionPanelsWithWeights(vs.Panels, x, y, w, h, horizontal)
 }
