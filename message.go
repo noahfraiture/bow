@@ -1,6 +1,8 @@
 package main
 
-import "app/tui"
+import (
+	"app/tui"
+)
 
 type messagePanel struct {
 	*tui.TextPanel
@@ -13,15 +15,29 @@ func (mp *messagePanel) Update(msg tui.InputMessage) (handled bool, redraw bool)
 	return handled, redraw
 }
 
-func newMessagePanel(name string) messagePanel {
+func newMessagePanelUpdate(name string) messagePanel {
 	return messagePanel{
 		TextPanel: &tui.TextPanel{
 			PanelBase: tui.PanelBase{
 				Title:  name,
 				Border: true,
 			},
-			Text: []rune{},
+			Text: make([]rune, 0),
 		},
 		msg: new(string),
+	}
+}
+
+func newMessagePanelCreate(name string) messagePanel {
+	msg := "\n\nSummary: \n\nTest case: \n\nReviewers: \n\n"
+	return messagePanel{
+		TextPanel: &tui.TextPanel{
+			PanelBase: tui.PanelBase{
+				Title:  name,
+				Border: true,
+			},
+			Text: []rune(msg),
+		},
+		msg: &msg,
 	}
 }

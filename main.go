@@ -31,8 +31,8 @@ func createApp() (*tui.App, *handler, error) {
 		diffFrom:  newCommitPanel("Diff from", commits),
 		diffOn:    newCommitPanel("Diff from", commits),
 		diffs:     newDiffPanel("Diff to update", diffs),
-		updateMsg: newMessagePanel("Message"),
-		createMsg: newMessagePanel("Message"),
+		updateMsg: newMessagePanelUpdate("Message"),
+		createMsg: newMessagePanelCreate("Message"),
 	}
 
 	defaultLayout := &tui.HorizontalSplit{
