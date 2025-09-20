@@ -72,36 +72,52 @@ func (pb *PanelBase) wrapWithBorder(content string, active bool) string {
 	}
 
 	if !pb.Border {
-		contentLines := strings.Split(content, "\n")
-		var lines []string
-		if pb.Title != "" {
-			titleLine := truncateToWidth(pb.Title, pb.w)
-			paddedTitle := titleLine + strings.Repeat(" ", pb.w-displayWidth(titleLine))
-			lines = append(lines, paddedTitle)
-		}
-		maxContentLines := pb.h - len(lines)
-		if len(contentLines) > maxContentLines {
-			contentLines = contentLines[:maxContentLines]
-			if len(contentLines) > 0 {
-				contentLines[len(contentLines)-1] = "..."
-			}
-		}
-		for _, line := range contentLines {
-			truncated := truncateToWidth(line, pb.w)
-			padded := truncated + strings.Repeat(" ", pb.w-displayWidth(truncated))
-			lines = append(lines, padded)
-		}
-		for len(lines) < pb.h {
-			lines = append(lines, strings.Repeat(" ", pb.w))
-		}
-		return strings.Join(lines, "\n")
+		return pb.renderWithoutBorder(content)
 	}
 
+	return pb.renderWithBorder(content, active)
+}
+
+func (pb *PanelBase) renderWithoutBorder(content string) string {
+	var builder strings.Builder
+	lineCount := 0
+	contentLines := strings.Split(content, "\n")
+	if pb.Title != "" {
+		titleLine := truncateToWidth(pb.Title, pb.w)
+		paddedTitle := titleLine + strings.Repeat(" ", pb.w-displayWidth(titleLine))
+		builder.WriteString(paddedTitle)
+		builder.WriteString("\n")
+		lineCount++
+	}
+	maxContentLines := pb.h - lineCount
+	if len(contentLines) > maxContentLines {
+		contentLines = contentLines[:maxContentLines]
+		if len(contentLines) > 0 {
+			contentLines[len(contentLines)-1] = "..."
+		}
+	}
+	for _, line := range contentLines {
+		truncated := truncateToWidth(line, pb.w)
+		padded := truncated + strings.Repeat(" ", pb.w-displayWidth(truncated))
+		builder.WriteString(padded)
+		builder.WriteString("\n")
+		lineCount++
+	}
+	for lineCount < pb.h {
+		builder.WriteString(strings.Repeat(" ", pb.w))
+		builder.WriteString("\n")
+		lineCount++
+	}
+	return strings.TrimSuffix(builder.String(), "\n")
+}
+
+func (pb *PanelBase) renderWithBorder(content string, active bool) string {
+	var builder strings.Builder
+	lineCount := 0
 	color := clrWhite
 	if active {
 		color = clrCyan
 	}
-
 	contentLines := strings.Split(content, "\n")
 	maxContentLines := pb.h - 2
 	if len(contentLines) > maxContentLines {
@@ -110,8 +126,24 @@ func (pb *PanelBase) wrapWithBorder(content string, active bool) string {
 			contentLines[len(contentLines)-1] = "..."
 		}
 	}
+	builder.WriteString(pb.buildTopBorder(color))
+	builder.WriteString("\n")
+	lineCount++
+	for _, line := range contentLines {
+		builder.WriteString(pb.buildContentLine(line, color))
+		builder.WriteString("\n")
+		lineCount++
+	}
+	for lineCount < pb.h-1 {
+		builder.WriteString(pb.buildEmptyLine(color))
+		builder.WriteString("\n")
+		lineCount++
+	}
+	builder.WriteString(pb.buildBottomBorder(color))
+	return builder.String()
+}
 
-	var lines []string
+func (pb *PanelBase) buildTopBorder(color string) string {
 	top := color + "┌" + strings.Repeat("─", pb.w-2) + "┐" + reset
 	if pb.Title != "" {
 		title := " [" + pb.Title + "] "
@@ -119,24 +151,21 @@ func (pb *PanelBase) wrapWithBorder(content string, active bool) string {
 			top = color + "┌" + title + strings.Repeat("─", pb.w-2-utf8.RuneCountInString(title)) + "┐" + reset
 		}
 	}
-	lines = append(lines, top)
+	return top
+}
 
-	for _, line := range contentLines {
-		truncated := truncateToWidth(line, pb.w-2)
-		padded := truncated + strings.Repeat(" ", pb.w-2-displayWidth(truncated))
-		borderedLine := color + "│" + reset + clrWhite + padded + reset + color + "│" + reset
-		lines = append(lines, borderedLine)
-	}
+func (pb *PanelBase) buildContentLine(line, color string) string {
+	truncated := truncateToWidth(line, pb.w-2)
+	padded := truncated + strings.Repeat(" ", pb.w-2-displayWidth(truncated))
+	return color + "│" + reset + clrWhite + padded + reset + color + "│" + reset
+}
 
-	for len(lines) < pb.h-1 {
-		emptyLine := color + "│" + reset + clrWhite + strings.Repeat(" ", pb.w-2) + reset + color + "│" + reset
-		lines = append(lines, emptyLine)
-	}
+func (pb *PanelBase) buildEmptyLine(color string) string {
+	return color + "│" + reset + clrWhite + strings.Repeat(" ", pb.w-2) + reset + color + "│" + reset
+}
 
-	bottom := color + "└" + strings.Repeat("─", pb.w-2) + "┘" + reset
-	lines = append(lines, bottom)
-
-	return strings.Join(lines, "\n")
+func (pb *PanelBase) buildBottomBorder(color string) string {
+	return color + "└" + strings.Repeat("─", pb.w-2) + "┘" + reset
 }
 
 // truncateToWidth truncates s to width w, preserving ANSI codes and adding ".." if needed.

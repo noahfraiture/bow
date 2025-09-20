@@ -760,3 +760,116 @@ func TestWeightedLayouts(t *testing.T) {
 		}
 	})
 }
+
+func TestTruncateToWidth(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		width    int
+		expected string
+	}{
+		{"no truncation", "hello", 10, "hello"},
+		{"exact width", "hello", 5, "hello"},
+		{"truncation", "hello world", 8, "hello .."},
+		{"short width", "hello", 2, "he"},
+		{"empty string", "", 5, ""},
+		{"width zero", "hello", 0, ""},
+		{"with ANSI", "\x1b[31mred\x1b[0m text", 6, "\x1b[31mred\x1b[0m .."},
+		{"only ANSI", "\x1b[31m\x1b[0m", 5, "\x1b[31m\x1b[0m"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := truncateToWidth(tt.input, tt.width)
+			if result != tt.expected {
+				t.Errorf("truncateToWidth(%q, %d) = %q, want %q", tt.input, tt.width, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestDisplayWidth(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected int
+	}{
+		{"simple", "hello", 5},
+		{"with spaces", "hello world", 11},
+		{"empty", "", 0},
+		{"with ANSI", "\x1b[31mred\x1b[0m", 3},
+		{"only ANSI", "\x1b[31m\x1b[0m", 0},
+		{"mixed", "a\x1b[31mb\x1b[0mc", 3},
+		{"unicode", "café", 4},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := displayWidth(tt.input)
+			if result != tt.expected {
+				t.Errorf("displayWidth(%q) = %d, want %d", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestWrapWithBorder(t *testing.T) {
+	t.Run("small dimensions", func(t *testing.T) {
+		pb := &PanelBase{w: 2, h: 2}
+		result := pb.wrapWithBorder("content", true)
+		if result != "" {
+			t.Errorf("Expected empty string for small dimensions, got %q", result)
+		}
+	})
+
+	t.Run("without border", func(t *testing.T) {
+		pb := &PanelBase{w: 10, h: 5, Title: "Test"}
+		pb.Border = false
+		result := pb.wrapWithBorder("line1\nline2", true)
+		lines := strings.Split(result, "\n")
+		if len(lines) != 5 {
+			t.Errorf("Expected 5 lines, got %d", len(lines))
+		}
+		if lines[0] != "Test      " {
+			t.Errorf("Title line mismatch: got %q", lines[0])
+		}
+		if lines[1] != "line1     " {
+			t.Errorf("Content line1 mismatch: got %q", lines[1])
+		}
+		if lines[2] != "line2     " {
+			t.Errorf("Content line2 mismatch: got %q", lines[2])
+		}
+	})
+
+	t.Run("with border", func(t *testing.T) {
+		pb := &PanelBase{w: 10, h: 5, Title: "Test"}
+		pb.Border = true
+		result := pb.wrapWithBorder("line1\nline2", true)
+		lines := strings.Split(result, "\n")
+		if len(lines) != 5 {
+			t.Errorf("Expected 5 lines, got %d", len(lines))
+		}
+		expectedTop := clrCyan + "┌ [Test] ┐" + reset
+		if lines[0] != expectedTop {
+			t.Errorf("Top border mismatch: got %q, want %q", lines[0], expectedTop)
+		}
+		expectedContent := clrCyan + "│" + reset + clrWhite + "line1   " + reset + clrCyan + "│" + reset
+		if lines[1] != expectedContent {
+			t.Errorf("Content line mismatch: got %q, want %q", lines[1], expectedContent)
+		}
+	})
+
+	t.Run("content overflow", func(t *testing.T) {
+		pb := &PanelBase{w: 10, h: 4, Title: "Test"}
+		pb.Border = true
+		result := pb.wrapWithBorder("1\n2\n3\n4\n5", true)
+		lines := strings.Split(result, "\n")
+		if len(lines) != 4 {
+			t.Errorf("Expected 4 lines, got %d", len(lines))
+		}
+		// Last content line should be truncated with "..."
+		if !strings.Contains(lines[2], "...") {
+			t.Errorf("Overflow not handled: %q", lines[2])
+		}
+	})
+}
