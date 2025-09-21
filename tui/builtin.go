@@ -59,7 +59,8 @@ func (lp *ListPanel[T]) Draw(active bool) string {
 				color = clrYellow
 			}
 		}
-		lines = append(lines, fmt.Sprintf("%s%v%s", color, item, reset))
+		line := fmt.Sprintf("%s%v%s", color, item, reset)
+		lines = append(lines, expandTabs(line))
 	}
 	return strings.Join(lines, "\n")
 }
@@ -128,10 +129,11 @@ func (tp *TextPanel) Update(msg InputMessage) (handled bool, redraw bool) {
 // Draw renders the TextPanel's text content as a string.
 // Returns the current text or a space if empty.
 func (tp *TextPanel) Draw(active bool) string {
-	if len(tp.Text) == 0 {
+	text := string(tp.Text)
+	if text == "" {
 		return " "
 	}
-	return string(tp.Text)
+	return expandTabs(text)
 }
 
 // CursorPosition calculates and returns the cursor position for TextPanel.
@@ -168,7 +170,11 @@ func (ip *InfoPanel) Update(msg InputMessage) (handled bool, redraw bool) {
 // Draw renders the InfoPanel's lines as a string.
 // Joins all lines with newlines.
 func (ip *InfoPanel) Draw(active bool) string {
-	return strings.Join(ip.Lines, "\n")
+	expanded := make([]string, len(ip.Lines))
+	for i, line := range ip.Lines {
+		expanded[i] = expandTabs(line)
+	}
+	return strings.Join(expanded, "\n")
 }
 
 // CursorPosition returns the cursor position for InfoPanel.

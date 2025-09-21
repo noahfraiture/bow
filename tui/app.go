@@ -15,15 +15,16 @@ import (
 // App manages the terminal user interface, handling panel layout, input, and rendering.
 // It runs the main event loop, positions panels, and redraws the screen.
 type App struct {
-	term        *terminal
-	panels      []Panel
-	layout      Layout
-	activeIdx   int
-	running     bool
-	sigch       chan os.Signal
-	handler     GlobalHandler
-	noDraw      bool     // For testing: skip drawing
-	previousOps []drawOp // Previous frame operations for double buffering
+	term                *terminal
+	panels              []Panel
+	layout              Layout
+	activeIdx           int
+	running             bool
+	sigch               chan os.Signal
+	handler             GlobalHandler
+	noDraw              bool     // For testing: skip drawing
+	previousOps         []drawOp // Previous frame operations for double buffering
+	disableDoubleBuffer bool     // Disable double buffering if true
 }
 
 // NewApp creates a new App instance with the given layout and global handler.
@@ -47,6 +48,9 @@ func NewApp(layout Layout, handler GlobalHandler) *App {
 		layout:  layout,
 		running: true,
 		handler: handler,
+	}
+	if os.Getenv("BOW_DISABLE_DOUBLE_BUFFER") != "" {
+		app.disableDoubleBuffer = true
 	}
 	app.layoutPanels(layout)
 	return app

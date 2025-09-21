@@ -101,7 +101,37 @@ func (a *App) drawStatusBarBuffered(buffer *drawBuffer) {
 	buffer.writeAt(0, a.term.rows-1, padRightRuneString(status, a.term.cols))
 }
 
-func (a *App) drawCursorBuffered() {
+func (a *App) drawPanels() {
+	for i, p := range a.panels {
+		active := i == a.activeIdx
+		a.drawPanel(p, active)
+	}
+}
+
+func (a *App) drawPanel(p Panel, active bool) {
+	content := p.Draw(active)
+	if content == "" {
+		return
+	}
+	full := p.GetBase().wrapWithBorder(content, active)
+	if full == "" {
+		return
+	}
+	lines := strings.Split(full, "\n")
+	for j, line := range lines {
+		if j >= p.GetBase().h {
+			break
+		}
+		writeAt(p.GetBase().x, p.GetBase().y+j, line)
+	}
+}
+
+func (a *App) drawStatusBar() {
+	status := a.handler.GetStatus()
+	writeAt(0, a.term.rows-1, padRightRuneString(status, a.term.cols))
+}
+
+func (a *App) drawCursor() {
 	if a.activeIdx >= len(a.panels) {
 		fmt.Print(HideCursor)
 		return
@@ -125,14 +155,22 @@ func (a *App) draw() {
 	// Reposition layout in case it changed
 	a.layoutPanels(a.layout)
 
-	buffer := newDrawBuffer(a)
-	a.drawPanelsBuffered(buffer)
-	a.drawStatusBarBuffered(buffer)
+	if a.disableDoubleBuffer {
+		clearScreen()
+		a.drawPanels()
+		a.drawStatusBar()
+		a.drawCursor()
+		fmt.Print(reset)
+	} else {
+		buffer := newDrawBuffer(a)
+		a.drawPanelsBuffered(buffer)
+		a.drawStatusBarBuffered(buffer)
 
-	buffer.flush()
-	a.previousOps = buffer.previousOps
-	a.drawCursorBuffered()
-	fmt.Print(reset)
+		buffer.flush()
+		a.previousOps = buffer.previousOps
+		a.drawCursor()
+		fmt.Print(reset)
+	}
 }
 
 func padRightRuneString(s string, w int) string {

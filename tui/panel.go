@@ -9,7 +9,7 @@ import (
 func runeWidth(r rune) int {
 	switch r {
 	case '\t':
-		return 8 // Approximate tab width
+		return len(expandTabs("\t"))
 	case '\n', '\r', '\v', '\f':
 		return 0
 	case 0:
@@ -234,7 +234,10 @@ func truncateToWidth(s string, w int) string {
 	return result.String()
 }
 
-// displayWidth calculates the visible width of s, ignoring ANSI escape sequences.
+func expandTabs(s string) string {
+	return strings.ReplaceAll(s, "\t", "    ")
+}
+
 func displayWidth(s string) int {
 	count := 0
 	inEscape := false
