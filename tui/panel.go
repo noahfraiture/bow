@@ -5,6 +5,30 @@ import (
 	"unicode/utf8"
 )
 
+// runeWidth returns the display width of a rune.
+func runeWidth(r rune) int {
+	switch r {
+	case '\t':
+		return 8 // Approximate tab width
+	case '\n', '\r', '\v', '\f':
+		return 0
+	case 0:
+		return 0
+	}
+	if r < 32 || (r >= 0x7f && r < 0xa0) {
+		return 0
+	}
+	if (r >= 0x1100 && r <= 0x115f) || r == 0x2329 || r == 0x232a ||
+		(r >= 0x2e80 && r <= 0x303e) || (r >= 0x3040 && r <= 0xa4cf) ||
+		(r >= 0xac00 && r <= 0xd7a3) || (r >= 0xf900 && r <= 0xfaff) ||
+		(r >= 0xfe10 && r <= 0xfe19) || (r >= 0xfe30 && r <= 0xfe6f) ||
+		(r >= 0xff00 && r <= 0xff60) || (r >= 0xffe0 && r <= 0xffe6) ||
+		(r >= 0x20000 && r <= 0x2fffd) || (r >= 0x30000 && r <= 0x3fffd) {
+		return 2
+	}
+	return 1
+}
+
 // PanelBase provides common fields and methods for panels.
 // It should be embedded (using an unnamed field) in custom panel structs to enable
 // positioning, borders, and default behavior. Users can override Update and Draw methods.
@@ -147,8 +171,8 @@ func (pb *PanelBase) buildTopBorder(color string) string {
 	top := color + "┌" + strings.Repeat("─", pb.w-2) + "┐" + reset
 	if pb.Title != "" {
 		title := " [" + pb.Title + "] "
-		if utf8.RuneCountInString(title) <= pb.w-2 {
-			top = color + "┌" + title + strings.Repeat("─", pb.w-2-utf8.RuneCountInString(title)) + "┐" + reset
+		if displayWidth(title) <= pb.w-2 {
+			top = color + "┌" + title + strings.Repeat("─", pb.w-2-displayWidth(title)) + "┐" + reset
 		}
 	}
 	return top
@@ -188,14 +212,19 @@ func truncateToWidth(s string, w int) string {
 			}
 		} else {
 			if !truncated {
-				if visible < w {
+				width := runeWidth(r)
+				if visible+width <= w {
 					result.WriteRune(r)
-					visible++
+					visible += width
 					if visible == w-2 && w > 2 {
 						result.WriteString("..")
 						truncated = true
 						visible += 2
 					}
+				} else if w-visible >= 2 && !truncated {
+					result.WriteString("..")
+					truncated = true
+					visible += 2
 				} else {
 					truncated = true
 				}
@@ -219,7 +248,7 @@ func displayWidth(s string) int {
 				inEscape = false
 			}
 		} else {
-			count++
+			count += runeWidth(r)
 		}
 		i += size
 	}

@@ -776,6 +776,10 @@ func TestTruncateToWidth(t *testing.T) {
 		{"width zero", "hello", 0, ""},
 		{"with ANSI", "\x1b[31mred\x1b[0m text", 6, "\x1b[31mred\x1b[0m .."},
 		{"only ANSI", "\x1b[31m\x1b[0m", 5, "\x1b[31m\x1b[0m"},
+		{"wide char", "中", 2, "中"},
+		{"wide truncation", "a中b", 3, "a.."},
+		{"wide exact", "中", 2, "中"},
+		{"wide over", "中a", 2, "中"},
 	}
 
 	for _, tt := range tests {
@@ -783,6 +787,31 @@ func TestTruncateToWidth(t *testing.T) {
 			result := truncateToWidth(tt.input, tt.width)
 			if result != tt.expected {
 				t.Errorf("truncateToWidth(%q, %d) = %q, want %q", tt.input, tt.width, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestRuneWidth(t *testing.T) {
+	tests := []struct {
+		name     string
+		r        rune
+		expected int
+	}{
+		{"ascii", 'a', 1},
+		{"wide", '中', 2},
+		{"control", '\x00', 0},
+		{"newline", '\n', 0},
+		{"tab", '\t', 8},
+		{"space", ' ', 1},
+		{"han", '漢', 2},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := runeWidth(tt.r)
+			if result != tt.expected {
+				t.Errorf("runeWidth(%q) = %d, want %d", tt.r, result, tt.expected)
 			}
 		})
 	}
@@ -801,6 +830,10 @@ func TestDisplayWidth(t *testing.T) {
 		{"only ANSI", "\x1b[31m\x1b[0m", 0},
 		{"mixed", "a\x1b[31mb\x1b[0mc", 3},
 		{"unicode", "café", 4},
+		{"wide char", "中", 2},
+		{"mixed wide", "a中b", 4},
+		{"wide with ANSI", "\x1b[31m中\x1b[0m", 2},
+		{"with tab", "a\tb", 1 + 8 + 1},
 	}
 
 	for _, tt := range tests {

@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"slices"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -98,6 +97,7 @@ func (a *App) Run() {
 	for _, panel := range a.panels {
 		panel.Update(InputMessage{})
 	}
+	clearScreen()
 	a.draw()
 
 	for a.running {
@@ -153,26 +153,17 @@ func (a *App) callOnPanelSwitch() {
 }
 
 func (a *App) handleMessage(msg InputMessage) {
-	if a.activeIdx < len(a.panels) {
-		handled, redraw := a.panels[a.activeIdx].Update(msg)
-		if handled {
-			if redraw {
-				a.draw()
-			}
-			return
-		}
+	handled, redraw := a.panels[a.activeIdx].Update(msg)
+	if redraw {
+		// Redraw all panels so that other panels that share data can be redraw too
+		a.draw()
+	}
+	if handled {
+		return
 	}
 
-	redraw := a.handler.UpdateGlobal(a, msg)
+	redraw = a.handler.UpdateGlobal(a, msg)
 	if redraw {
 		a.draw()
 	}
-}
-
-func padRightRuneString(s string, w int) string {
-	r := []rune(s)
-	if len(r) >= w {
-		return string(r[:w])
-	}
-	return string(r) + strings.Repeat(" ", w-len(r))
 }

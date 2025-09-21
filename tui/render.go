@@ -122,16 +122,22 @@ func (a *App) draw() {
 		return
 	}
 
-	buffer := newDrawBuffer(a)
+	// Reposition layout in case it changed
 	a.layoutPanels(a.layout)
+
+	buffer := newDrawBuffer(a)
 	a.drawPanelsBuffered(buffer)
 	a.drawStatusBarBuffered(buffer)
 
-	if len(a.previousOps) == 0 {
-		clearScreen()
-	}
 	buffer.flush()
 	a.previousOps = buffer.previousOps
 	a.drawCursorBuffered()
 	fmt.Print(reset)
+}
+
+func padRightRuneString(s string, w int) string {
+	if displayWidth(s) >= w {
+		return truncateToWidth(s, w)
+	}
+	return s + strings.Repeat(" ", w-displayWidth(s))
 }
