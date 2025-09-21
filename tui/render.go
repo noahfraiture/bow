@@ -101,7 +101,7 @@ func (a *App) drawStatusBarBuffered(buffer *drawBuffer) {
 	buffer.writeAt(0, a.term.rows-1, padRightRuneString(status, a.term.cols))
 }
 
-func (a *App) drawCursorBuffered(buffer *drawBuffer) {
+func (a *App) drawCursorBuffered() {
 	if a.activeIdx >= len(a.panels) {
 		fmt.Print(HideCursor)
 		return
@@ -110,8 +110,8 @@ func (a *App) drawCursorBuffered(buffer *drawBuffer) {
 	active := true
 	x, y, show := p.CursorPosition(active)
 	if show {
+		fmt.Printf("\x1b[%d;%dH", y+1, x+1)
 		fmt.Print(ShowCursor)
-		buffer.writeAt(x, y, "")
 	} else {
 		fmt.Print(HideCursor)
 	}
@@ -126,12 +126,12 @@ func (a *App) draw() {
 	a.layoutPanels(a.layout)
 	a.drawPanelsBuffered(buffer)
 	a.drawStatusBarBuffered(buffer)
-	a.drawCursorBuffered(buffer)
 
 	if len(a.previousOps) == 0 {
 		clearScreen()
 	}
 	buffer.flush()
 	a.previousOps = buffer.previousOps
+	a.drawCursorBuffered()
 	fmt.Print(reset)
 }
