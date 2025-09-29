@@ -13,22 +13,24 @@ type status int
 
 const (
 	_ status = iota
-	NeedReview
+	NeedsReview
 	Draft
 	ChangesPlanned
 	Accepted
+	NeedsRevision
 )
 
 var stringToStatus = map[string]status{
-	"Needs Review":    NeedReview,
+	"Needs Review":    NeedsReview,
 	"Draft":           Draft,
 	"Changes Planned": ChangesPlanned,
 	"Accepted":        Accepted,
+	"Needs Revision":  NeedsRevision,
 }
 
 func (s status) String() string {
 	switch s {
-	case NeedReview:
+	case NeedsReview:
 		return colorYellow + "Needs Review" + colorReset
 	case Draft:
 		return colorGreen + "Draft" + colorReset
@@ -36,6 +38,8 @@ func (s status) String() string {
 		return colorRed + "Changes Planned" + colorReset
 	case Accepted:
 		return colorCyan + "Accepted" + colorReset
+	case NeedsRevision:
+		return colorRed + "Needs Revision" + colorReset
 	default:
 		panic(fmt.Sprintf("Unknown status: %d", s))
 	}
@@ -76,7 +80,7 @@ func (dp *diffPanel) Update(msg tui.InputMessage) (handled bool, redraw bool) {
 	return handled, redraw
 }
 
-var diffRe = regexp.MustCompile(`(Needs Review|Draft|Changes Planned|Accepted).+(D\d{5}): (.*)`)
+var diffRe = regexp.MustCompile(`(Needs Review|Draft|Changes Planned|Accepted|Needs Revision).+(D\d{5}): (.*)`)
 
 func parseDiff(line string) (diff, bool) {
 	line = strings.TrimSpace(line)

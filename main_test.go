@@ -19,7 +19,7 @@ func TestParseDiff(t *testing.T) {
 		expected diff
 		ok       bool
 	}{
-		{"Needs Review D12345: Test message", diff{status: NeedReview, id: "D12345", message: "Test message"}, true},
+		{"Needs Review D12345: Test message", diff{status: NeedsReview, id: "D12345", message: "Test message"}, true},
 		{"Draft D67890: Another message", diff{status: Draft, id: "D67890", message: "Another message"}, true},
 		{"Changes Planned D07312: Change message", diff{status: ChangesPlanned, id: "D07312", message: "Change message"}, true},
 		{"", diff{}, false},
